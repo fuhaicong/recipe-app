@@ -1,200 +1,184 @@
 /* ============================================================
-   weather.js — Geolocation & Weather API v3
-   Hybrid: GPS + IP fallback, Open-Meteo weather
+   weather.js v4 — Resilient geolocation for China
+   Strategy: cached > GPS > IP > instant fallback. Never blocks >3s.
    ============================================================ */
 
 const WeatherModule = (() => {
-  const WEATHER_API = 'https://api.open-meteo.com/v1/forecast';
-  const GEOCODING_API = 'https://geocoding-api.open-meteo.com/v1/search';
 
-  async function fetchWithTimeout(url, timeoutMs, options = {}) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try { return await fetch(url, { ...options, signal: controller.signal }); }
-    finally { clearTimeout(timer); }
+  /* ── Fetcher with timeout ── */
+  async function fetchJSON(url, timeoutMs = 3000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const r = await fetch(url, { signal: ctrl.signal });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.json();
+    } finally { clearTimeout(t); }
   }
 
-  /* ── GPS Geolocation ── */
-  function getGPSPosition() {
+  /* ── GPS ── */
+  function getGPS() {
     return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) { reject(new Error('GEOLOCATION_NOT_SUPPORTED')); return; }
+      if (!navigator.geolocation) return reject(new Error('no_api'));
+      const timer = setTimeout(() => reject(new Error('timeout')), 4000);
       navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, source: 'gps' }),
-        (err) => reject(new Error({1:'GEOLOCATION_DENIED',2:'GEOLOCATION_UNAVAILABLE',3:'GEOLOCATION_TIMEOUT'}[err.code]||'GEOLOCATION_ERROR')),
-        { enableHighAccuracy: false, timeout: 5000, maximumAge: 600000 }
+        (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }); },
+        (err) => { clearTimeout(timer); reject(new Error({1:'denied',2:'unavailable',3:'timeout'}[err.code]||'error')); },
+        { enableHighAccuracy: false, timeout: 4000, maximumAge: 600000 }
       );
     });
   }
 
-  /* ── IP Geolocation (fast fallback for China) ── */
+  /* ── IP geolocation (multi-service, first to respond wins) ── */
   async function getIPLocation() {
-    // Try multiple IP geolocation services, use first to respond
     const services = [
+      // ipapi.co — reliable global, CORS-friendly
       async () => {
-        const r = await fetchWithTimeout('https://api.ip.sb/geoip', 3000);
-        if (!r.ok) throw new Error();
-        const d = await r.json();
-        return { lat: d.latitude||d.lat, lon: d.longitude||d.lon, cityName: d.city||'', provinceName: d.region||'', source: 'ip' };
+        const d = await fetchJSON('https://ipapi.co/json/', 3000);
+        if (!d || !d.latitude) throw new Error('no_data');
+        return { lat: d.latitude, lon: d.longitude, city: d.city||'', region: d.region||'' };
       },
+      // ip-api.com — has CDN, CORS-friendly, free for non-commercial
       async () => {
-        const r = await fetchWithTimeout('https://ipapi.co/json/', 3000);
-        if (!r.ok) throw new Error();
-        const d = await r.json();
-        return { lat: d.latitude, lon: d.longitude, cityName: d.city||'', provinceName: d.region||'', source: 'ip' };
+        const d = await fetchJSON('https://ip-api.com/json/?lang=zh-CN', 3000);
+        if (!d || d.status !== 'success') throw new Error('no_data');
+        return { lat: d.lat, lon: d.lon, city: d.city||'', region: d.regionName||'' };
       },
+      // ip.sb — Asian servers
       async () => {
-        const r = await fetchWithTimeout('https://api.ipapi.is/', 3000);
-        if (!r.ok) throw new Error();
-        const d = await r.json();
-        const loc = d.location || {};
-        return { lat: loc.latitude, lon: loc.longitude, cityName: loc.city||'', provinceName: loc.state||'', source: 'ip' };
+        const d = await fetchJSON('https://api.ip.sb/geoip', 3000);
+        if (!d || !d.latitude) throw new Error('no_data');
+        return { lat: d.latitude, lon: d.longitude, city: d.city||'', region: d.region||'' };
       },
     ];
 
     for (const svc of services) {
       try {
-        const result = await svc();
-        if (result.lat && result.lon) return result;
+        const r = await svc();
+        if (r.lat != null && r.lon != null) return r;
       } catch(e) { continue; }
     }
     return null;
   }
 
-  /* ── Reverse geocode coordinates → city name ── */
-  async function reverseGeocode(lat, lon) {
-    // Photon — fast OSM-based geocoder
+  /* ── Reverse geocode (coords → city name) ── */
+  async function reverseCity(lat, lon) {
     try {
-      const url = `https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}&lang=zh&limit=1`;
-      const resp = await fetchWithTimeout(url, 4000);
-      if (resp.ok) {
-        const data = await resp.json();
-        const props = (data.features && data.features[0] && data.features[0].properties) || {};
-        const cityName = props.city || props.town || props.county || props.state || props.name || '';
-        const provinceName = props.state || props.county || '';
-        if (cityName) return { cityName, provinceName };
-      }
-    } catch(e) {}
-    return null;
+      const d = await fetchJSON(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}&lang=zh&limit=1`, 3000);
+      const p = (d?.features?.[0]?.properties) || {};
+      const name = p.city || p.town || p.county || p.state || p.name || '';
+      const prov = p.state || p.county || '';
+      return name ? { cityName: name, provinceName: prov } : null;
+    } catch(e) { return null; }
   }
 
-  async function forwardGeocode(cityQuery) {
-    const url = `${GEOCODING_API}?name=${encodeURIComponent(cityQuery)}&count=1&language=zh`;
-    const resp = await fetchWithTimeout(url, 6000);
-    if (!resp.ok) throw new Error('GEOCODING_FAILED');
-    const data = await resp.json();
-    if (!data.results || data.results.length === 0) throw new Error('CITY_NOT_FOUND');
-    const r = data.results[0];
-    return { lat: r.latitude, lon: r.longitude, cityName: r.name||cityQuery, provinceName: r.admin1||r.country||'' };
+  /* ── Forward geocode (city name → coords) ── */
+  async function forwardGeocode(city) {
+    const d = await fetchJSON(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=zh`, 5000);
+    if (!d?.results?.length) throw new Error('city_not_found');
+    const r = d.results[0];
+    return { lat: r.latitude, lon: r.longitude, cityName: r.name||city, provinceName: r.admin1||r.country||'' };
   }
 
   /* ── Weather ── */
   async function fetchWeather(lat, lon) {
-    const params = new URLSearchParams({
+    const p = new URLSearchParams({
       latitude: lat.toFixed(4), longitude: lon.toFixed(4),
       current: 'temperature_2m,weather_code,relative_humidity_2m,apparent_temperature,is_day,wind_speed_10m',
       timezone: 'auto', forecast_days: '1',
     });
-    const resp = await fetchWithTimeout(`${WEATHER_API}?${params}`, 8000);
-    if (!resp.ok) throw new Error('WEATHER_API_FAILED');
-    const c = (await resp.json()).current;
-    return {
-      temperature: Math.round(c.temperature_2m), feelsLike: Math.round(c.apparent_temperature),
-      weatherCode: c.weather_code, humidity: c.relative_humidity_2m,
-      windSpeed: c.wind_speed_10m, isDay: c.is_day === 1,
-    };
+    try {
+      const d = await fetchJSON(`https://api.open-meteo.com/v1/forecast?${p}`, 6000);
+      const c = d.current;
+      return { temp: Math.round(c.temperature_2m), feels: Math.round(c.apparent_temperature), code: c.weather_code, humidity: c.relative_humidity_2m, wind: c.wind_speed_10m, isDay: c.is_day===1 };
+    } catch(e) {
+      return { temp: 20, feels: 20, code: 0, humidity: 50, wind: 0, isDay: true };
+    }
   }
 
   /* ── Cache ── */
-  function saveCachedCoords(coords) {
-    try { localStorage.setItem('recipe_coords', JSON.stringify({ lat:coords.lat, lon:coords.lon, cachedAt:Date.now() })); } catch(e) {}
-  }
-  function getCachedCoords() {
+  function saveCoords(c) { try { localStorage.setItem('rc', JSON.stringify({...c, t: Date.now()})); } catch(e) {} }
+  function getCached() {
     try {
-      const raw = localStorage.getItem('recipe_coords');
-      if (!raw) return null;
-      const d = JSON.parse(raw);
-      if (Date.now() - d.cachedAt > 7*24*3600*1000) return null;
-      return { lat: d.lat, lon: d.lon };
+      const r = localStorage.getItem('rc'); if (!r) return null;
+      const d = JSON.parse(r);
+      return (Date.now()-d.t < 7*86400000) ? { lat: d.lat, lon: d.lon, city: d.city||'', prov: d.prov||'' } : null;
     } catch(e) { return null; }
   }
 
-  /* ── Main ── */
-  async function getWeatherContext(options = {}) {
-    let coords = { lat: 39.9, lon: 116.4, cityName: '北京', provinceName: '北京' };
+  /* ==========================================================
+     Main: resolve location + weather. Hard 3s limit.
+     ========================================================== */
+  async function getWeatherContext(opts = {}) {
+    let coord = { lat: 39.9042, lon: 116.4074, cityName: '北京', provinceName: '北京' }; // default
 
-    if (options.manualCity) {
-      const geo = await forwardGeocode(options.manualCity);
-      coords = { lat: geo.lat, lon: geo.lon, cityName: geo.cityName, provinceName: geo.provinceName };
-      saveCachedCoords(coords);
+    if (opts.manualCity) {
+      const g = await forwardGeocode(opts.manualCity);
+      coord = { lat: g.lat, lon: g.lon, cityName: g.cityName, provinceName: g.provinceName };
+      saveCoords(coord);
     } else {
-      // Try cached coords first
-      const cached = getCachedCoords();
+      // 1. Use cached coords (instant, zero network)
+      const cached = getCached();
       if (cached) {
-        const revGeo = await reverseGeocode(cached.lat, cached.lon);
-        coords = { lat: cached.lat, lon: cached.lon, cityName: revGeo?.cityName||'当前位置', provinceName: revGeo?.provinceName||'' };
+        coord = { lat: cached.lat, lon: cached.lon, cityName: cached.city||'当前位置', provinceName: cached.prov||'' };
+        // Try to refresh city name in background
+        reverseCity(cached.lat, cached.lon).then(r => {
+          if (r) saveCoords({ lat: cached.lat, lon: cached.lon, city: r.cityName, prov: r.provinceName });
+        }).catch(()=>{});
       } else {
-        // Race: GPS vs IP geolocation
-        const gpsPromise = getGPSPosition().then(async (pos) => {
-          const revGeo = await reverseGeocode(pos.lat, pos.lon);
-          return { lat: pos.lat, lon: pos.lon, cityName: revGeo?.cityName||'当前位置', provinceName: revGeo?.provinceName||'' };
-        });
+        // 2. Race GPS vs IP with a hard 3s overall timeout
+        const gpsP = getGPS().then(p => ({ ...p, src: 'gps' })).catch(() => null);
+        const ipP  = getIPLocation().then(r => r ? { lat: r.lat, lon: r.lon, city: r.city, prov: r.region, src: 'ip' } : null).catch(() => null);
 
-        const ipPromise = getIPLocation().then(r => {
-          if (!r) throw new Error('IP_FAILED');
-          return { lat: r.lat, lon: r.lon, cityName: r.cityName||'当前位置', provinceName: r.provinceName||'' };
-        });
+        const winner = await Promise.race([
+          gpsP, ipP,
+          new Promise(r => setTimeout(() => r('timeout'), 3500))
+        ]);
 
-        try {
-          // Race GPS vs IP — whichever responds first wins
-          coords = await Promise.race([gpsPromise, ipPromise]);
-        } catch (e) {
-          // Both failed? Try GPS one more time alone
-          try {
-            coords = await gpsPromise;
-          } catch (e2) {
-            try {
-              coords = await ipPromise;
-            } catch (e3) {
-              // Ultimate fallback: use Beijing
-            }
+        if (winner && winner !== 'timeout' && winner.lat != null) {
+          let cityName = winner.city || '当前位置';
+          let provName = winner.prov || '';
+          // Only try reverse geocode if we got GPS (no city info)
+          if (winner.src === 'gps' && !cityName) {
+            const rev = await reverseCity(winner.lat, winner.lon);
+            if (rev) { cityName = rev.cityName; provName = rev.provinceName; }
           }
+          coord = { lat: winner.lat, lon: winner.lon, cityName, provinceName: provName };
         }
-        saveCachedCoords(coords);
+        // else: use Beijing default
+        saveCoords({ lat: coord.lat, lon: coord.lon, city: coord.cityName, prov: coord.provinceName });
       }
     }
 
-    // Weather
-    let weather;
-    try {
-      weather = await fetchWeather(coords.lat, coords.lon);
-    } catch (e) {
-      weather = { temperature: 20, feelsLike: 20, weatherCode: 0, humidity: 50, windSpeed: 0, isDay: true };
-    }
+    // Weather (always succeeds, falls back to 20°C default)
+    const w = await fetchWeather(coord.lat, coord.lon);
 
     const now = new Date();
-    const tempCategory = RecipeModule.getTempCategory(weather.temperature);
-    const weatherTag = RecipeModule.mapWeatherCodeToTag(weather.weatherCode);
-
     return {
-      temperature: weather.temperature, feelsLike: weather.feelsLike,
-      tempCategory, weatherCode: weather.weatherCode, weatherTag,
-      isRainy: weatherTag==='rainy', isSnowy: weatherTag==='snowy', isExtreme: weatherTag==='extreme',
-      isDay: weather.isDay, humidity: weather.humidity, windSpeed: weather.windSpeed,
+      temperature: w.temp, feelsLike: w.feels,
+      tempCategory: RecipeModule.getTempCategory(w.temp),
+      weatherCode: w.code,
+      weatherTag: RecipeModule.mapWeatherCodeToTag(w.code),
+      isRainy: RecipeModule.mapWeatherCodeToTag(w.code)==='rainy',
+      isSnowy: RecipeModule.mapWeatherCodeToTag(w.code)==='snowy',
+      isExtreme: RecipeModule.mapWeatherCodeToTag(w.code)==='extreme',
+      isDay: w.isDay, humidity: w.humidity, windSpeed: w.wind,
       season: RecipeModule.getSeason(now.getMonth()+1, now.getDate()),
       mealTime: RecipeModule.getMealTime(now.getHours()),
-      region: RecipeModule.getRegionFromProvince(coords.provinceName),
-      cityName: coords.cityName||'未知城市', provinceName: coords.provinceName||'',
+      region: RecipeModule.getRegionFromProvince(coord.provinceName),
+      cityName: coord.cityName||'未知城市',
+      provinceName: coord.provinceName||'',
       dateStr: RecipeModule.formatDateStr(now),
-      session: getTodayRefreshCount(),
+      session: getRefreshCount(),
     };
   }
 
-  function getTodayRefreshCount() {
-    try { return parseInt(localStorage.getItem('recipe_refresh_'+RecipeModule.formatDateStr(new Date()))||'0',10); } catch(e) { return 0; }
+  function getRefreshCount() {
+    try { return parseInt(localStorage.getItem('rf_'+RecipeModule.formatDateStr(new Date()))||'0',10); } catch(e) { return 0; }
   }
   function incrementRefreshCount() {
-    try { const k='recipe_refresh_'+RecipeModule.formatDateStr(new Date()); const c=getTodayRefreshCount()+1; localStorage.setItem(k,String(c)); return c; } catch(e) { return 1; }
+    try { const k='rf_'+RecipeModule.formatDateStr(new Date()); const n=getRefreshCount()+1; localStorage.setItem(k,String(n)); return n; } catch(e) { return 1; }
   }
 
-  return { getWeatherContext, getCurrentPosition: getGPSPosition, reverseGeocode, forwardGeocode, fetchWeather, getCachedCoords, saveCachedCoords, incrementRefreshCount };
+  return { getWeatherContext, getCurrentPosition: getGPS, reverseGeocode: reverseCity, forwardGeocode, fetchWeather, getCachedCoords: getCached, saveCachedCoords: saveCoords, incrementRefreshCount };
 })();
