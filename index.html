@@ -92,13 +92,15 @@
       </button>
     </section>
 
-    <!-- Location fallback -->
-    <section id="location-prompt" class="location-prompt" hidden>
+    <!-- Location fallback — always visible for quick manual input -->
+    <section id="location-prompt" class="location-prompt">
       <div class="location-prompt-inner">
-        <p class="location-prompt-text"><svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-1px;margin-right:4px"><use href="#icon-pin"/></svg>无法获取位置，请手动输入城市名：</p>
+        <p class="location-prompt-text" id="location-prompt-text">
+          <svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-1px;margin-right:4px"><use href="#icon-pin"/></svg> 正在获取位置...
+        </p>
         <form id="city-form" class="city-form">
-          <input type="text" id="city-input" class="city-input" placeholder="例如：北京、上海、广州" autocomplete="off">
-          <button type="submit" class="btn btn-primary btn-sm">确认</button>
+          <input type="text" id="city-input" class="city-input" placeholder="或手动输入城市，如：北京" autocomplete="off">
+          <button type="submit" class="btn btn-primary btn-sm">确定</button>
         </form>
         <p id="location-error-msg" class="error-msg"></p>
       </div>

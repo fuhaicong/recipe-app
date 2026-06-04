@@ -22,7 +22,7 @@ const WeatherModule = (() => {
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
         (err) => reject(new Error({1:'GEOLOCATION_DENIED',2:'GEOLOCATION_UNAVAILABLE',3:'GEOLOCATION_TIMEOUT'}[err.code]||'GEOLOCATION_ERROR')),
-        { enableHighAccuracy: false, timeout: 6000, maximumAge: 1800000 }
+        { enableHighAccuracy: false, timeout: 4000, maximumAge: 300000 }
       );
     });
   }

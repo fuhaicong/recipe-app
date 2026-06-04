@@ -108,6 +108,9 @@ const App = (() => {
         throw geoErr;
       }
       UIModule.hideLocationPrompt();
+      // Update prompt text to show we got location
+      const promptText = document.getElementById('location-prompt-text');
+      if (promptText) promptText.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-1px;margin-right:4px"><use href="#icon-pin"/></svg> 当前城市：<strong>'+context.cityName+'</strong>';
 
       const recentIds = getRecentRecommendations();
       const mealRecs = getMealRecommendations(context, recentIds);

@@ -349,7 +349,6 @@ const UIModule = (() => {
   }
 
   function hideLocationPrompt() {
-    hide('location-prompt');
     setText('location-error-msg', '');
     $('city-input').value = '';
   }
