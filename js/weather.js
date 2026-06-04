@@ -140,5 +140,5 @@ const WeatherModule = (() => {
     try { const k='rf2_'+RecipeModule.formatDateStr(new Date()); const n=getRefreshCount()+1; localStorage.setItem(k,String(n)); return n; } catch(e) { return 1; }
   }
 
-  return { getWeatherContext, getCurrentPosition: getGPSPosition, cityToCoords, fetchWeather, incrementRefreshCount };
+  return { getWeatherContext, getCurrentPosition: getGPSPosition, cityToCoords, fetchWeather, incrementRefreshCount, saveCachedCoords: saveCache };
 })();

@@ -158,6 +158,29 @@ const App = (() => {
     const cached = getCachedToday();
     if (cached&&cached.takeoutPrimary) UIModule.copyTakeoutKeywords(cached.takeoutPrimary);
   }
+  async function onRelocate() {
+    const btn = document.getElementById('btn-relocate');
+    if (btn) { btn.disabled = true; btn.textContent = '定位中...'; }
+
+    // Clear old cache to force fresh GPS attempt
+    try { localStorage.removeItem('rc2'); } catch(e) {}
+
+    try {
+      const pos = await WeatherModule.getCurrentPosition();
+      if (pos && pos.lat != null) {
+        WeatherModule.saveCachedCoords(pos.lat, pos.lon, '当前位置', '');
+        const promptText = document.getElementById('location-prompt-text');
+        if (promptText) promptText.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-1px;margin-right:4px"><use href="#icon-pin"/></svg> 当前城市：<strong>当前位置</strong>';
+        await refreshRecommendations({ silent: false });
+      }
+    } catch(e) {
+      UIModule.showError('定位失败，请手动输入城市或检查浏览器位置权限');
+      setTimeout(() => UIModule.hideError(), 3000);
+    }
+
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14"><use href="#icon-pin"/></svg> 重新定位'; }
+  }
+
   function onMealSlotClick(recipeId) {
     if (!recipeId) return;
     const allRecipes = getAllRecipes();
@@ -329,6 +352,10 @@ const App = (() => {
     // Load more
     const btnLoadMore=document.getElementById('btn-load-more');
     if(btnLoadMore) btnLoadMore.addEventListener('click',loadMoreBrowse);
+
+    // Relocate button
+    const btnRelocate = document.getElementById('btn-relocate');
+    if (btnRelocate) btnRelocate.addEventListener('click', onRelocate);
 
     // Today's meal slots (delegated)
     const mealsGrid=document.getElementById('today-meals-grid');
