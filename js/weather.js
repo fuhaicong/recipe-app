@@ -39,6 +39,19 @@ const WeatherModule = (() => {
     return { lat: r.latitude, lon: r.longitude, cityName: r.name||cityName, provinceName: r.admin1||r.country||'' };
   }
 
+  /* ── Reverse geocode: coordinates → city name (non-blocking, best-effort) ── */
+  async function reverseCityName(lat, lon) {
+    // Nominatim (OpenStreetMap) — free, open-source, no key needed
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=zh&zoom=10`;
+      const d = await fetchJSON(url, 3000);
+      const addr = d?.address || {};
+      const city = addr.city || addr.town || addr.county || addr.state_district || addr.state || '';
+      const prov = addr.state || addr.province || '';
+      return city ? { cityName: city, provinceName: prov } : null;
+    } catch(e) { return null; }
+  }
+
   /* ── Weather from Open-Meteo ── */
   async function fetchWeather(lat, lon) {
     const p = new URLSearchParams({
@@ -92,9 +105,21 @@ const WeatherModule = (() => {
       let gpsSuccess = false;
       try {
         const pos = await getGPSPosition();
-        coord = { lat: pos.lat, lon: pos.lon, cityName: '当前位置', provinceName: '' };
-        saveCache(pos.lat, pos.lon, '当前位置', '');
+        coord = { lat: pos.lat, lon: pos.lon, cityName: '获取位置中…', provinceName: '' };
+        saveCache(pos.lat, pos.lon, '获取位置中…', '');
         gpsSuccess = true;
+
+        // Non-blocking: try to get city name from coordinates
+        reverseCityName(pos.lat, pos.lon).then(name => {
+          if (name) {
+            saveCache(pos.lat, pos.lon, name.cityName, name.provinceName);
+            // Update UI if still on this location
+            const cn = document.getElementById('city-name');
+            if (cn && cn.textContent.includes('获取位置中') || cn.textContent.includes('当前位置')) {
+              cn.textContent = name.cityName;
+            }
+          }
+        }).catch(() => {});
       } catch(e) {
         // GPS failed — try cache
         const cached = loadCache();
