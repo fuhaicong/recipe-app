@@ -6,128 +6,40 @@
   <meta name="theme-color" content="#FDF8F3">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="今天吃什么">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23FDF8F3'/><text x='50' y='72' font-size='64' text-anchor='middle'>🍳</text></svg>">
   <title>今天吃什么 · 每日食谱</title>
   <link rel="stylesheet" href="css/style.css">
-
-  <!-- Inline SVG icon library -->
   <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
     <defs>
-      <!-- Sun -->
-      <symbol id="icon-sun" viewBox="0 0 32 32">
-        <circle cx="16" cy="16" r="6" fill="currentColor" opacity="0.9"/>
-        <g stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.6">
-          <line x1="16" y1="2" x2="16" y2="5"/>
-          <line x1="16" y1="27" x2="16" y2="30"/>
-          <line x1="2" y1="16" x2="5" y2="16"/>
-          <line x1="27" y1="16" x2="30" y2="16"/>
-          <line x1="5.6" y1="5.6" x2="7.8" y2="7.8"/>
-          <line x1="24.2" y1="24.2" x2="26.4" y2="26.4"/>
-          <line x1="5.6" y1="26.4" x2="7.8" y2="24.2"/>
-          <line x1="24.2" y1="7.8" x2="26.4" y2="5.6"/>
-        </g>
-      </symbol>
-      <!-- Moon -->
-      <symbol id="icon-moon" viewBox="0 0 32 32">
-        <path d="M24 18.5A10 10 0 0 1 13.5 8a10 10 0 1 0 10.5 10.5Z" fill="currentColor" opacity="0.9"/>
-        <path d="M24 18.5A10 10 0 0 1 13.5 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
-      </symbol>
-      <!-- Cloud -->
-      <symbol id="icon-cloud" viewBox="0 0 32 32">
-        <path d="M8 18a5 5 0 0 1 0-10 6.5 6.5 0 0 1 12-3 4.5 4.5 0 0 1 4 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M6 20h14a4 4 0 0 0 0-8h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </symbol>
-      <!-- Cloud+Sun (partly cloudy) -->
-      <symbol id="icon-cloud-sun" viewBox="0 0 32 32">
-        <circle cx="20" cy="10" r="4.5" fill="currentColor" opacity="0.7"/>
-        <path d="M7 20h14a4.5 4.5 0 0 0 1-9h-.5A4.5 4.5 0 0 0 13 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M5 22h16a3.5 3.5 0 0 0 0-7h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </symbol>
-      <!-- Rain -->
-      <symbol id="icon-rain" viewBox="0 0 32 32">
-        <path d="M7 14a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10-2.5A3.5 3.5 0 0 1 20 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <line x1="10" y1="16" x2="8" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="15" y1="16" x2="13" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="20" y1="16" x2="18" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </symbol>
-      <!-- Heavy Rain / Thunderstorm -->
-      <symbol id="icon-storm" viewBox="0 0 32 32">
-        <path d="M7 12a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10-2.5A3.5 3.5 0 0 1 20 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <polyline points="14,14 11,18 14,18 12,22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <line x1="19" y1="16" x2="17" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </symbol>
-      <!-- Snow -->
-      <symbol id="icon-snow" viewBox="0 0 32 32">
-        <path d="M7 12a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10-2.5A3.5 3.5 0 0 1 20 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="10" cy="17" r="1.2" fill="currentColor" opacity="0.7"/>
-        <circle cx="15.5" cy="18.5" r="1.2" fill="currentColor" opacity="0.7"/>
-        <circle cx="20" cy="17" r="1.2" fill="currentColor" opacity="0.7"/>
-        <circle cx="13" cy="23" r="1.2" fill="currentColor" opacity="0.7"/>
-        <circle cx="18" cy="24" r="1.2" fill="currentColor" opacity="0.7"/>
-      </symbol>
-      <!-- Fog/Mist -->
-      <symbol id="icon-mist" viewBox="0 0 32 32">
-        <line x1="6" y1="11" x2="26" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
-        <line x1="8" y1="15" x2="24" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
-        <line x1="5" y1="19" x2="27" y2="19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
-        <line x1="9" y1="23" x2="23" y2="23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
-      </symbol>
-      <!-- Wind -->
-      <symbol id="icon-wind" viewBox="0 0 32 32">
-        <path d="M4 16h18a3 3 0 1 0-3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M8 22h12a3 3 0 1 0-2-5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M12 10h6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
-      </symbol>
-      <!-- Clock (for time meta) -->
-      <symbol id="icon-clock" viewBox="0 0 16 16">
-        <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.2"/>
-        <polyline points="8,4.5 8,8 11.5,10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-      </symbol>
-      <!-- Chef hat (difficulty) -->
-      <symbol id="icon-chef" viewBox="0 0 16 16">
-        <path d="M3 10h10v3.5H3V10Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-        <path d="M3.5 10c0-2.5.5-4 4.5-4s4.5 1.5 4.5 4" fill="none" stroke="currentColor" stroke-width="1.2"/>
-        <circle cx="8" cy="3.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/>
-      </symbol>
-      <!-- Refresh -->
-      <symbol id="icon-refresh" viewBox="0 0 18 18">
-        <path d="M15 3v4h-4M3 15v-4h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M2 9a7 7 0 0 1 12.3-4.5M4.3 13.5A7 7 0 0 0 16 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </symbol>
-      <!-- Copy -->
-      <symbol id="icon-copy" viewBox="0 0 16 16">
-        <rect x="5" y="5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/>
-        <path d="M3 11V3.5A1.5 1.5 0 0 1 4.5 2H11" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      </symbol>
-      <!-- Search (takeout) -->
-      <symbol id="icon-search" viewBox="0 0 16 16">
-        <circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.2"/>
-        <line x1="10.8" y1="10.8" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </symbol>
-      <!-- Location pin -->
-      <symbol id="icon-pin" viewBox="0 0 16 16">
-        <path d="M8 1.5C5.5 1.5 3.5 3.7 3.5 6.3c0 3.4 4.5 8.2 4.5 8.2s4.5-4.8 4.5-8.2C12.5 3.7 10.5 1.5 8 1.5Z" fill="none" stroke="currentColor" stroke-width="1.2"/>
-        <circle cx="8" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
-      </symbol>
+      <symbol id="icon-sun" viewBox="0 0 32 32"><circle cx="16" cy="16" r="6" fill="currentColor" opacity="0.9"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.6"><line x1="16" y1="2" x2="16" y2="5"/><line x1="16" y1="27" x2="16" y2="30"/><line x1="2" y1="16" x2="5" y2="16"/><line x1="27" y1="16" x2="30" y2="16"/><line x1="5.6" y1="5.6" x2="7.8" y2="7.8"/><line x1="24.2" y1="24.2" x2="26.4" y2="26.4"/><line x1="5.6" y1="26.4" x2="7.8" y2="24.2"/><line x1="24.2" y1="7.8" x2="26.4" y2="5.6"/></g></symbol>
+      <symbol id="icon-moon" viewBox="0 0 32 32"><path d="M24 18.5A10 10 0 0 1 13.5 8a10 10 0 1 0 10.5 10.5Z" fill="currentColor" opacity="0.9"/></symbol>
+      <symbol id="icon-cloud" viewBox="0 0 32 32"><path d="M8 18a5 5 0 0 1 0-10 6.5 6.5 0 0 1 12-3 4.5 4.5 0 0 1 4 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 20h14a4 4 0 0 0 0-8h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="icon-cloud-sun" viewBox="0 0 32 32"><circle cx="20" cy="10" r="4.5" fill="currentColor" opacity="0.7"/><path d="M7 20h14a4.5 4.5 0 0 0 1-9h-.5A4.5 4.5 0 0 0 13 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M5 22h16a3.5 3.5 0 0 0 0-7h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="icon-rain" viewBox="0 0 32 32"><path d="M7 14a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10-2.5A3.5 3.5 0 0 1 20 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="16" x2="8" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="15" y1="16" x2="13" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="20" y1="16" x2="18" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+      <symbol id="icon-storm" viewBox="0 0 32 32"><path d="M7 12a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10-2.5A3.5 3.5 0 0 1 20 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="14,14 11,18 14,18 12,22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="19" y1="16" x2="17" y2="22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+      <symbol id="icon-snow" viewBox="0 0 32 32"><path d="M7 12a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10-2.5A3.5 3.5 0 0 1 20 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="17" r="1.2" fill="currentColor" opacity="0.7"/><circle cx="15.5" cy="18.5" r="1.2" fill="currentColor" opacity="0.7"/><circle cx="20" cy="17" r="1.2" fill="currentColor" opacity="0.7"/></symbol>
+      <symbol id="icon-mist" viewBox="0 0 32 32"><line x1="6" y1="11" x2="26" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/><line x1="8" y1="15" x2="24" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/><line x1="5" y1="19" x2="27" y2="19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/></symbol>
+      <symbol id="icon-clock" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.2"/><polyline points="8,4.5 8,8 11.5,10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="icon-chef" viewBox="0 0 16 16"><path d="M3 10h10v3.5H3V10Z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M3.5 10c0-2.5.5-4 4.5-4s4.5 1.5 4.5 4" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="3.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/></symbol>
+      <symbol id="icon-refresh" viewBox="0 0 18 18"><path d="M15 3v4h-4M3 15v-4h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 9a7 7 0 0 1 12.3-4.5M4.3 13.5A7 7 0 0 0 16 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+      <symbol id="icon-copy" viewBox="0 0 16 16"><rect x="5" y="5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M3 11V3.5A1.5 1.5 0 0 1 4.5 2H11" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></symbol>
+      <symbol id="icon-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="10.8" y1="10.8" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+      <symbol id="icon-pin" viewBox="0 0 16 16"><path d="M8 1.5C5.5 1.5 3.5 3.7 3.5 6.3c0 3.4 4.5 8.2 4.5 8.2s4.5-4.8 4.5-8.2C12.5 3.7 10.5 1.5 8 1.5Z" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="6" r="2" fill="none" stroke="currentColor" stroke-width="1.2"/></symbol>
+      <symbol id="icon-plus" viewBox="0 0 18 18"><line x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="icon-book" viewBox="0 0 18 18"><path d="M2 3h5l3 2h6v10H2V3Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+      <symbol id="icon-x" viewBox="0 0 18 18"><line x1="4" y1="4" x2="14" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="4" x2="4" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
     </defs>
   </svg>
 </head>
 <body>
-  <!-- Pull-to-refresh indicator -->
-  <div id="ptr-indicator" class="ptr-indicator" aria-hidden="true">
-    <div class="ptr-spinner"></div>
-    <span>下拉刷新</span>
-  </div>
+  <div id="ptr-indicator" class="ptr-indicator" aria-hidden="true"><div class="ptr-spinner"></div><span>下拉刷新</span></div>
 
   <main id="app">
-    <!-- App Header -->
     <header class="app-header">
       <h1 class="app-title">今天吃<span class="accent">什么</span></h1>
       <p class="app-subtitle">Daily Recipe · 每日食谱推荐</p>
     </header>
 
-    <!-- Weather Module -->
+    <!-- Weather -->
     <article id="weather-bar" class="weather-module" aria-label="天气与位置信息">
       <div class="weather-row">
         <div class="weather-city">
@@ -135,9 +47,7 @@
           <span id="weather-desc" class="weather-desc">——</span>
         </div>
         <div class="weather-temp-block">
-          <span id="weather-icon-container" class="weather-icon-svg">
-            <!-- SVG injected here -->
-          </span>
+          <span id="weather-icon-container" class="weather-icon-svg"></span>
           <span id="temperature" class="temperature-value">--<span class="temperature-unit">°C</span></span>
         </div>
       </div>
@@ -148,79 +58,44 @@
       </div>
     </article>
 
-    <!-- Loading Skeleton -->
+    <!-- Loading -->
     <div id="loading-skeleton" class="skeleton-card" aria-busy="true" role="status">
       <div class="skeleton-line skeleton-line--title"></div>
       <div class="skeleton-line skeleton-line--subtitle"></div>
       <div class="skeleton-line skeleton-line--text"></div>
       <div class="skeleton-line skeleton-line--text short"></div>
-      <div class="skeleton-line skeleton-line--text"></div>
     </div>
 
-    <!-- Primary Recommendation Card -->
-    <article id="primary-card" class="recipe-card recipe-card--primary" hidden aria-label="今日推荐">
-      <div class="card-badge">Today's Pick</div>
-      <div class="card-header">
-        <h2 id="primary-name" class="recipe-name"></h2>
-        <span id="primary-match" class="match-score"></span>
-      </div>
-      <p id="primary-desc" class="recipe-desc"></p>
-      <div class="card-meta">
-        <span class="meta-item">
-          <span class="meta-icon"><svg viewBox="0 0 16 16"><use href="#icon-clock"/></svg></span>
-          <span id="primary-time">--</span>
-        </span>
-        <span class="meta-item">
-          <span class="meta-icon"><svg viewBox="0 0 16 16"><use href="#icon-chef"/></svg></span>
-          <span id="primary-difficulty">--</span>
-        </span>
-      </div>
-      <details id="primary-details" class="recipe-details">
-        <summary class="details-summary">查看食材与做法</summary>
-        <div class="ingredients-section">
-          <h3><span class="section-dot"></span> 食材</h3>
-          <ul id="primary-ingredients" class="ingredients-list"></ul>
-        </div>
-        <div class="steps-section">
-          <h3><span class="section-dot"></span> 做法</h3>
-          <ol id="primary-steps" class="steps-list"></ol>
-        </div>
-      </details>
-      <div id="primary-tags" class="tag-list"></div>
-    </article>
-
-    <!-- Alternative Recommendations -->
-    <section id="alternatives-section" class="alternatives" hidden aria-label="其他推荐">
-      <h3 class="section-title">其他选择</h3>
-      <div id="alternative-cards" class="alt-cards-grid"></div>
+    <!-- Today's 3 Meals -->
+    <section id="today-meals" hidden aria-label="今日三餐推荐">
+      <h3 class="section-title">今日三餐</h3>
+      <div id="today-meals-grid" class="meals-grid"></div>
     </section>
 
     <!-- Action Bar -->
     <div class="action-bar">
-      <button id="btn-refresh" class="btn btn-primary btn-block">
-        <svg width="16" height="16" viewBox="0 0 18 18"><use href="#icon-refresh"/></svg>
-        换一个
+      <button id="btn-browse" class="btn btn-secondary">
+        <svg width="15" height="15"><use href="#icon-book"/></svg> 浏览菜谱
+      </button>
+      <button id="btn-refresh" class="btn btn-primary" style="flex:1">
+        <svg width="16" height="16"><use href="#icon-refresh"/></svg> 换一批
       </button>
     </div>
 
-    <!-- Takeout Section -->
+    <!-- Takeout -->
     <section id="takeout-section" class="takeout-section" hidden aria-label="外卖搜索建议">
       <div class="takeout-divider"><span>想点外卖</span></div>
       <p class="takeout-hint">复制关键词，去美团 / 饿了么搜索：</p>
       <div id="takeout-keywords" class="takeout-keywords"></div>
       <button id="btn-copy-keywords" class="btn btn-secondary btn-block">
-        <svg width="14" height="14" viewBox="0 0 16 16"><use href="#icon-copy"/></svg>
-        复制关键词
+        <svg width="14" height="14"><use href="#icon-copy"/></svg> 复制关键词
       </button>
     </section>
 
-    <!-- Location Fallback -->
+    <!-- Location fallback -->
     <section id="location-prompt" class="location-prompt" hidden>
       <div class="location-prompt-inner">
-        <p class="location-prompt-text">
-          <svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-1px;margin-right:4px"><use href="#icon-pin"/></svg>
-          无法获取位置，请手动输入城市名：
-        </p>
+        <p class="location-prompt-text"><svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-1px;margin-right:4px"><use href="#icon-pin"/></svg>无法获取位置，请手动输入城市名：</p>
         <form id="city-form" class="city-form">
           <input type="text" id="city-input" class="city-input" placeholder="例如：北京、上海、广州" autocomplete="off">
           <button type="submit" class="btn btn-primary btn-sm">确认</button>
@@ -229,18 +104,83 @@
       </div>
     </section>
 
-    <!-- Error Banner -->
+    <!-- Error banner -->
     <div id="error-banner" class="error-banner" hidden role="alert"></div>
 
-    <!-- Offline Banner -->
+    <!-- Offline banner -->
     <div id="offline-banner" class="offline-banner" hidden role="status">当前处于离线状态 · 显示上次缓存</div>
   </main>
 
-  <footer class="app-footer">
-    <p>每日食谱 · 好好吃饭</p>
-  </footer>
+  <!-- ====== Browse Recipes Overlay ====== -->
+  <div id="browse-overlay" class="overlay" hidden>
+    <div class="overlay-header">
+      <h2 class="overlay-title">全部菜谱 <span id="browse-count" class="browse-count"></span></h2>
+      <button id="btn-close-browse" class="btn-icon" aria-label="关闭">
+        <svg width="20" height="20"><use href="#icon-x"/></svg>
+      </button>
+    </div>
+    <div class="overlay-search">
+      <svg width="15" height="15" class="search-icon"><use href="#icon-search"/></svg>
+      <input type="search" id="browse-search" class="search-input" placeholder="搜索菜名或食材..." autocomplete="off">
+    </div>
+    <div id="browse-tags" class="browse-tags"></div>
+    <div id="browse-list" class="browse-list"></div>
+    <div id="browse-load-more" class="browse-load-more" hidden>
+      <button id="btn-load-more" class="btn btn-secondary btn-block">加载更多</button>
+    </div>
+    <div id="browse-empty" class="browse-empty" hidden>没有找到匹配的菜谱</div>
+  </div>
 
-  <!-- Scripts -->
+  <!-- ====== Add Recipe Modal ====== -->
+  <div id="add-modal" class="overlay" hidden>
+    <div class="overlay-header">
+      <h2 class="overlay-title">添加我的菜谱</h2>
+      <button id="btn-close-add" class="btn-icon" aria-label="关闭">
+        <svg width="20" height="20"><use href="#icon-x"/></svg>
+      </button>
+    </div>
+    <form id="add-form" class="add-form">
+      <label class="form-label">菜名 <span class="required">*</span></label>
+      <input type="text" id="add-name" class="form-input" placeholder="例如：妈妈的番茄牛腩" required>
+
+      <label class="form-label">一句话描述</label>
+      <input type="text" id="add-desc" class="form-input" placeholder="例如：酸甜浓郁，牛腩入口即化">
+
+      <label class="form-label">食材清单 <span class="required">*</span></label>
+      <textarea id="add-ingredients" class="form-textarea" rows="4" placeholder="每行一个食材，例如：&#10;牛腩 500g&#10;番茄 3个&#10;姜片 3片" required></textarea>
+
+      <label class="form-label">做法步骤 <span class="required">*</span></label>
+      <textarea id="add-steps" class="form-textarea" rows="4" placeholder="每行一个步骤，例如：&#10;牛腩焯水洗净&#10;番茄炒出汁加水&#10;加牛腩炖1小时" required></textarea>
+
+      <div class="form-row">
+        <div class="form-col">
+          <label class="form-label">制作时间（分钟）</label>
+          <input type="number" id="add-time" class="form-input" value="20" min="1" max="300">
+        </div>
+        <div class="form-col">
+          <label class="form-label">难度</label>
+          <select id="add-difficulty" class="form-input">
+            <option value="easy">简单</option>
+            <option value="medium" selected>中等</option>
+            <option value="hard">挑战</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="form-label">外卖搜索关键词</label>
+      <input type="text" id="add-takeout" class="form-input" placeholder="用逗号分隔，例如：牛腩,番茄牛腩饭,炖菜">
+
+      <button type="submit" class="btn btn-primary btn-block">保存菜谱</button>
+    </form>
+  </div>
+
+  <!-- ====== Floating Add Button ====== -->
+  <button id="fab-add" class="fab" aria-label="添加菜谱">
+    <svg width="22" height="22"><use href="#icon-plus"/></svg>
+  </button>
+
+  <footer class="app-footer"><p>每日食谱 · 好好吃饭</p></footer>
+
   <script src="js/recipes.js"></script>
   <script src="js/weather.js"></script>
   <script src="js/ui.js"></script>
