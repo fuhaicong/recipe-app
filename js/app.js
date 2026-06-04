@@ -449,7 +449,6 @@ const App = (() => {
       const cached = getCachedToday();
       if (cached && isCacheFresh(cached)) {
         renderFromCache(cached);
-        // Always try GPS refresh in background (will prompt if permission is "prompt")
         if (navigator.onLine) {
           setTimeout(() => refreshRecommendations({ silent: true }), 2000);
         }
@@ -458,9 +457,23 @@ const App = (() => {
       }
     } catch(e) {
       console.error('Init error:', e);
-      const cached = getCachedToday();
-      if (cached) { renderFromCache(cached); UIModule.showError('刷新失败，显示上次推荐'); }
-      else { UIModule.showError('加载失败，请检查网络连接', true); }
+      // Ultimate fallback: render with hardcoded defaults
+      const fallbackCtx = {
+        temperature: 22, feelsLike: 22, tempCategory: 'warm', weatherCode: 0, weatherTag: 'clear',
+        isRainy: false, isSnowy: false, isExtreme: false, isDay: true, humidity: 50,
+        season: 'summer', mealTime: 'lunch', region: 'universal',
+        cityName: '北京', provinceName: '北京', dateStr: '2026-06-04', session: 0,
+      };
+      try {
+        const recentIds = getRecentRecommendations();
+        const mealRecs = getMealRecommendations(fallbackCtx, recentIds);
+        const primary = mealRecs['lunch']?.recipe || mealRecs['dinner']?.recipe;
+        UIModule.renderWeatherBar(fallbackCtx);
+        UIModule.renderTodayMeals(mealRecs);
+        if (primary) UIModule.renderTakeoutSection(primary);
+      } catch(e2) {
+        UIModule.showError('加载失败，请刷新重试', true);
+      }
     }
 
     setupEventListeners();

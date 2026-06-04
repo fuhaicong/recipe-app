@@ -39,17 +39,51 @@ const WeatherModule = (() => {
     return { lat: r.latitude, lon: r.longitude, cityName: r.name||cityName, provinceName: r.admin1||r.country||'' };
   }
 
-  /* ── Reverse geocode: coordinates → city name (non-blocking, best-effort) ── */
-  async function reverseCityName(lat, lon) {
-    // Nominatim (OpenStreetMap) — free, open-source, no key needed
-    try {
-      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=zh&zoom=10`;
-      const d = await fetchJSON(url, 3000);
-      const addr = d?.address || {};
-      const city = addr.city || addr.town || addr.county || addr.state_district || addr.state || '';
-      const prov = addr.state || addr.province || '';
-      return city ? { cityName: city, provinceName: prov } : null;
-    } catch(e) { return null; }
+  /* ── Local city lookup: coordinates → nearest Chinese city (zero network) ── */
+  // ~200 major Chinese cities with lat/lon
+  const CITY_DB = [
+    ['北京',39.90,116.40,'北京'],['上海',31.23,121.47,'上海'],['广州',23.13,113.26,'广东'],['深圳',22.54,114.06,'广东'],
+    ['成都',30.57,104.07,'四川'],['重庆',29.56,106.55,'重庆'],['杭州',30.25,120.17,'浙江'],['武汉',30.58,114.30,'湖北'],
+    ['西安',34.26,108.94,'陕西'],['南京',32.06,118.80,'江苏'],['长沙',28.23,112.94,'湖南'],['天津',39.14,117.18,'天津'],
+    ['苏州',31.30,120.62,'江苏'],['郑州',34.75,113.62,'河南'],['济南',36.67,116.98,'山东'],['青岛',36.09,120.38,'山东'],
+    ['大连',38.91,121.61,'辽宁'],['沈阳',41.80,123.43,'辽宁'],['哈尔滨',45.80,126.53,'黑龙江'],['长春',43.88,125.32,'吉林'],
+    ['福州',26.07,119.30,'福建'],['厦门',24.48,118.09,'福建'],['昆明',25.04,102.71,'云南'],['贵阳',26.65,106.63,'贵州'],
+    ['南宁',22.82,108.37,'广西'],['海口',20.04,110.34,'海南'],['合肥',31.82,117.23,'安徽'],['南昌',28.68,115.86,'江西'],
+    ['太原',37.87,112.55,'山西'],['石家庄',38.04,114.51,'河北'],['兰州',36.06,103.83,'甘肃'],['西宁',36.62,101.78,'青海'],
+    ['银川',38.49,106.23,'宁夏'],['乌鲁木齐',43.79,87.62,'新疆'],['拉萨',29.65,91.14,'西藏'],['呼和浩特',40.84,111.75,'内蒙古'],
+    ['东莞',23.05,113.75,'广东'],['佛山',23.03,113.12,'广东'],['珠海',22.27,113.58,'广东'],['惠州',23.11,114.41,'广东'],
+    ['中山',22.52,113.38,'广东'],['汕头',23.37,116.69,'广东'],['温州',28.00,120.70,'浙江'],['宁波',29.87,121.55,'浙江'],
+    ['无锡',31.57,120.31,'江苏'],['常州',31.77,119.97,'江苏'],['南通',32.00,120.86,'江苏'],['徐州',34.26,117.19,'江苏'],
+    ['烟台',37.46,121.44,'山东'],['淄博',36.81,118.06,'山东'],['潍坊',36.71,119.16,'山东'],['洛阳',34.62,112.45,'河南'],
+    ['开封',34.80,114.31,'河南'],['唐山',39.63,118.18,'河北'],['保定',38.87,115.47,'河北'],['邯郸',36.61,114.49,'河北'],
+    ['襄阳',32.06,112.15,'湖北'],['宜昌',30.69,111.29,'湖北'],['荆州',30.33,112.24,'湖北'],['株洲',27.83,113.13,'湖南'],
+    ['湘潭',27.83,112.94,'湖南'],['衡阳',26.89,112.57,'湖南'],['岳阳',29.37,113.09,'湖南'],['赣州',25.83,114.93,'江西'],
+    ['九江',29.71,116.00,'江西'],['桂林',25.27,110.29,'广西'],['柳州',24.31,109.41,'广西'],['三亚',18.25,109.51,'海南'],
+    ['绵阳',31.47,104.73,'四川'],['宜宾',28.77,104.62,'四川'],['遵义',27.72,106.93,'贵州'],['大理',25.61,100.27,'云南'],
+    ['包头',40.66,109.84,'内蒙古'],['大庆',46.59,125.03,'黑龙江'],['齐齐哈尔',47.35,123.92,'黑龙江'],['吉林',43.84,126.55,'吉林'],
+    ['鞍山',41.11,122.99,'辽宁'],['抚顺',41.88,123.96,'辽宁'],['秦皇岛',39.94,119.60,'河北'],['威海',37.51,122.12,'山东'],
+    ['日照',35.42,119.53,'山东'],['连云港',34.60,119.22,'江苏'],['扬州',32.39,119.41,'江苏'],['镇江',32.19,119.43,'江苏'],
+    ['绍兴',30.05,120.58,'浙江'],['嘉兴',30.77,120.76,'浙江'],['金华',29.08,119.65,'浙江'],['台州',28.66,121.42,'浙江'],
+    ['泉州',24.91,118.59,'福建'],['漳州',24.52,117.65,'福建'],['芜湖',31.35,118.43,'安徽'],['蚌埠',32.94,117.36,'安徽'],
+    ['咸阳',34.33,108.71,'陕西'],['宝鸡',34.36,107.24,'陕西'],['天水',34.58,105.72,'甘肃'],['嘉峪关',39.77,98.29,'甘肃'],
+    ['克拉玛依',45.58,84.89,'新疆'],['柳州',24.31,109.41,'广西'],['北海',21.48,109.12,'广西'],['湛江',21.27,110.36,'广东'],
+    ['茂名',21.66,110.92,'广东'],['韶关',24.80,113.60,'广东'],['河源',23.74,114.70,'广东'],['清远',23.70,113.03,'广东'],
+    ['肇庆',23.05,112.46,'广东'],['江门',22.58,113.08,'广东'],['潮州',23.66,116.63,'广东'],['揭阳',23.55,116.37,'广东'],
+    ['梅州',24.30,116.12,'广东'],['汕尾',22.78,115.37,'广东'],['阳江',21.86,111.98,'广东'],['云浮',22.92,112.04,'广东'],
+  ];
+
+  function reverseCityName(lat, lon) {
+    let best = null, bestDist = Infinity;
+    for (const c of CITY_DB) {
+      const dlat = c[1] - lat, dlon = c[2] - lon;
+      const dist = dlat*dlat + dlon*dlon; // squared distance (fast, no sqrt needed for comparison)
+      if (dist < bestDist) { bestDist = dist; best = c; }
+    }
+    // If distance is reasonable (< ~3 degrees ≈ 300km), use the city
+    if (best && bestDist < 9) {
+      return { cityName: best[0], provinceName: best[3] };
+    }
+    return { cityName: '当前位置', provinceName: best ? best[3] : '' };
   }
 
   /* ── Weather from Open-Meteo ── */
@@ -102,24 +136,12 @@ const WeatherModule = (() => {
     } else {
       // Try GPS first (triggers browser permission prompt if state is "prompt")
       // Only fall back to cache if GPS fails
-      let gpsSuccess = false;
       try {
         const pos = await getGPSPosition();
-        coord = { lat: pos.lat, lon: pos.lon, cityName: '获取位置中…', provinceName: '' };
-        saveCache(pos.lat, pos.lon, '获取位置中…', '');
-        gpsSuccess = true;
-
-        // Non-blocking: try to get city name from coordinates
-        reverseCityName(pos.lat, pos.lon).then(name => {
-          if (name) {
-            saveCache(pos.lat, pos.lon, name.cityName, name.provinceName);
-            // Update UI if still on this location
-            const cn = document.getElementById('city-name');
-            if (cn && cn.textContent.includes('获取位置中') || cn.textContent.includes('当前位置')) {
-              cn.textContent = name.cityName;
-            }
-          }
-        }).catch(() => {});
+        // Local lookup: find nearest Chinese city
+        const cityInfo = reverseCityName(pos.lat, pos.lon);
+        coord = { lat: pos.lat, lon: pos.lon, cityName: cityInfo.cityName, provinceName: cityInfo.provinceName };
+        saveCache(pos.lat, pos.lon, cityInfo.cityName, cityInfo.provinceName);
       } catch(e) {
         // GPS failed — try cache
         const cached = loadCache();
