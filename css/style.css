@@ -3,9 +3,6 @@
    Aesthetic: Editorial food journal meets personal recipe notebook
    ============================================================ */
 
-/* --- Google Fonts --- */
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
-
 /* ==========================================================
    Design Tokens
    ========================================================== */
@@ -62,9 +59,9 @@
   --shadow-button: 0 2px 8px rgba(200,132,60,0.2);
 
   /* ── Typography ── */
-  --font-display: 'DM Serif Display', 'Noto Serif SC', 'Georgia', serif;
-  --font-heading: 'Noto Serif SC', 'Georgia', serif;
-  --font-body: 'Noto Sans SC', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Georgia', 'Noto Serif SC', 'STSong', 'SimSun', serif;
+  --font-heading: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'STHeiti', sans-serif;
+  --font-body: -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
   --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
 
   --text-xs: 0.6875rem;    /* 11px */
