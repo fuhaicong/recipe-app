@@ -63,6 +63,16 @@ const App = (() => {
     if (cached.takeoutPrimary) UIModule.renderTakeoutSection(cached.takeoutPrimary);
   }
 
+  function renderFallback() {
+    const fb = {temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isRainy:false,isSnowy:false,isExtreme:false,isDay:true,humidity:50,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
+    try {
+      const mealRecs = getMealRecommendations(fb, []);
+      const p = mealRecs['lunch']?.recipe || mealRecs['dinner']?.recipe;
+      UIModule.renderWeatherBar(fb); UIModule.renderTodayMeals(mealRecs);
+      if (p) UIModule.renderTakeoutSection(p);
+    } catch(e) { UIModule.showError('加载失败，请刷新重试', true); }
+  }
+
   /* ==========================================================
      Whole-Day Recommendations
      ========================================================== */
@@ -426,54 +436,30 @@ const App = (() => {
     window.addEventListener('offline',()=>UIModule.setOfflineBanner(true));
     if(!navigator.onLine) UIModule.setOfflineBanner(true);
 
-    // Check geolocation permission state
-    let permDenied = false;
-    try {
-      const perm = await navigator.permissions.query({ name: 'geolocation' });
-      permDenied = (perm.state === 'denied');
-      // Listen for changes (user might enable it in settings and come back)
-      perm.addEventListener('change', () => {
-        if (perm.state === 'granted') {
-          // User just enabled location — refresh!
-          onRelocate();
-        }
-      });
-    } catch(e) { /* permissions API not available */ }
-
-    const promptText = document.getElementById('location-prompt-text');
-    if (permDenied && promptText) {
-      promptText.innerHTML = '⚠️ 定位权限已被拒绝<br><small style="color:#888">点击下方「重新定位」查看如何开启</small>';
-    }
+    // Don't block init on permissions check — do it in background
+    setTimeout(() => {
+      try {
+        navigator.permissions.query({ name: 'geolocation' }).then(perm => {
+          if (perm.state === 'denied') {
+            const pt = document.getElementById('location-prompt-text');
+            if (pt) pt.innerHTML = '⚠️ 定位权限已被拒绝<br><small style="color:#888">点击下方「重新定位」查看如何开启</small>';
+          }
+          perm.addEventListener('change', () => { if (perm.state === 'granted') onRelocate(); });
+        }).catch(()=>{});
+      } catch(e) {}
+    }, 500);
 
     try {
       const cached = getCachedToday();
       if (cached && isCacheFresh(cached)) {
         renderFromCache(cached);
-        if (navigator.onLine) {
-          setTimeout(() => refreshRecommendations({ silent: true }), 2000);
-        }
+        if (navigator.onLine) setTimeout(() => refreshRecommendations({silent:true}), 2000);
       } else {
-        await refreshRecommendations({ silent: false });
+        await refreshRecommendations({silent:false});
       }
     } catch(e) {
       console.error('Init error:', e);
-      // Ultimate fallback: render with hardcoded defaults
-      const fallbackCtx = {
-        temperature: 22, feelsLike: 22, tempCategory: 'warm', weatherCode: 0, weatherTag: 'clear',
-        isRainy: false, isSnowy: false, isExtreme: false, isDay: true, humidity: 50,
-        season: 'summer', mealTime: 'lunch', region: 'universal',
-        cityName: '北京', provinceName: '北京', dateStr: '2026-06-04', session: 0,
-      };
-      try {
-        const recentIds = getRecentRecommendations();
-        const mealRecs = getMealRecommendations(fallbackCtx, recentIds);
-        const primary = mealRecs['lunch']?.recipe || mealRecs['dinner']?.recipe;
-        UIModule.renderWeatherBar(fallbackCtx);
-        UIModule.renderTodayMeals(mealRecs);
-        if (primary) UIModule.renderTakeoutSection(primary);
-      } catch(e2) {
-        UIModule.showError('加载失败，请刷新重试', true);
-      }
+      renderFallback();
     }
 
     setupEventListeners();
