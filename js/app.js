@@ -431,36 +431,37 @@ const App = (() => {
      Init
      ========================================================== */
   async function init() {
-    UIModule.showLoading();
     window.addEventListener('online',()=>UIModule.setOfflineBanner(false));
     window.addEventListener('offline',()=>UIModule.setOfflineBanner(true));
     if(!navigator.onLine) UIModule.setOfflineBanner(true);
 
-    // Don't block init on permissions check — do it in background
+    // STEP 1: Render IMMEDIATELY with defaults (no waiting for anything)
+    const cached = getCachedToday();
+    if (cached && isCacheFresh(cached)) {
+      renderFromCache(cached);
+    } else {
+      renderFallback();
+    }
+
+    // STEP 2: Try to get real location+weather in background, update if successful
+    try {
+      await refreshRecommendations({silent:false});
+    } catch(e) {
+      console.error('Refresh failed, keeping defaults:', e);
+    }
+
+    // STEP 3: Permissions check in background
     setTimeout(() => {
       try {
-        navigator.permissions.query({ name: 'geolocation' }).then(perm => {
+        navigator.permissions.query({name:'geolocation'}).then(perm => {
           if (perm.state === 'denied') {
             const pt = document.getElementById('location-prompt-text');
-            if (pt) pt.innerHTML = '⚠️ 定位权限已被拒绝<br><small style="color:#888">点击下方「重新定位」查看如何开启</small>';
+            if (pt) pt.innerHTML = '⚠️ 定位权限已被拒绝<br><small>点击重新定位查看如何开启</small>';
           }
-          perm.addEventListener('change', () => { if (perm.state === 'granted') onRelocate(); });
+          perm.addEventListener('change', () => { if (perm.state==='granted') onRelocate(); });
         }).catch(()=>{});
       } catch(e) {}
     }, 500);
-
-    try {
-      const cached = getCachedToday();
-      if (cached && isCacheFresh(cached)) {
-        renderFromCache(cached);
-        if (navigator.onLine) setTimeout(() => refreshRecommendations({silent:true}), 2000);
-      } else {
-        await refreshRecommendations({silent:false});
-      }
-    } catch(e) {
-      console.error('Init error:', e);
-      renderFallback();
-    }
 
     setupEventListeners();
 
@@ -469,7 +470,7 @@ const App = (() => {
       if (e.persisted) {
         const c = getCachedToday();
         if (c && isCacheFresh(c)) renderFromCache(c);
-        else if (c) { renderFromCache(c); refreshRecommendations({ silent: true }); }
+        else { renderFallback(); refreshRecommendations({silent:true}).catch(()=>{}); }
       }
     });
   }
