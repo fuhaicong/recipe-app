@@ -160,22 +160,40 @@ const App = (() => {
   }
   async function onRelocate() {
     const btn = document.getElementById('btn-relocate');
+    const promptText = document.getElementById('location-prompt-text');
     if (btn) { btn.disabled = true; btn.textContent = '定位中...'; }
 
-    // Clear old cache to force fresh GPS attempt
+    // Check permission state first
+    let permDenied = false;
+    try {
+      const perm = await navigator.permissions.query({ name: 'geolocation' });
+      permDenied = (perm.state === 'denied');
+    } catch(e) { /* permissions API not supported */ }
+
+    // Clear old cache
     try { localStorage.removeItem('rc2'); } catch(e) {}
 
     try {
       const pos = await WeatherModule.getCurrentPosition();
       if (pos && pos.lat != null) {
         WeatherModule.saveCachedCoords(pos.lat, pos.lon, '当前位置', '');
-        const promptText = document.getElementById('location-prompt-text');
-        if (promptText) promptText.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-1px;margin-right:4px"><use href="#icon-pin"/></svg> 当前城市：<strong>当前位置</strong>';
+        if (promptText) promptText.innerHTML = '📍 定位成功！当前：<strong>附近位置</strong>';
         await refreshRecommendations({ silent: false });
       }
     } catch(e) {
-      UIModule.showError('定位失败，请手动输入城市或检查浏览器位置权限');
-      setTimeout(() => UIModule.hideError(), 3000);
+      if (permDenied || e.message === 'denied') {
+        // Permission permanently denied — tell user how to fix
+        if (promptText) {
+          const isIOS = /iPhone|iPad|iOS/i.test(navigator.userAgent);
+          const hint = isIOS
+            ? '设置 → 隐私与安全性 → 定位服务 → Safari → 允许'
+            : '浏览器地址栏左侧锁图标 → 权限 → 位置 → 允许';
+          promptText.innerHTML = '⚠️ 定位权限未开启<br><small style="color:#888">' + hint + '<br>或直接下方输入城市名↓</small>';
+        }
+      } else {
+        UIModule.showError('定位失败，请在下方输入城市名');
+        setTimeout(() => UIModule.hideError(), 3000);
+      }
     }
 
     if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14"><use href="#icon-pin"/></svg> 重新定位'; }
