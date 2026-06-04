@@ -426,28 +426,52 @@ const App = (() => {
     window.addEventListener('offline',()=>UIModule.setOfflineBanner(true));
     if(!navigator.onLine) UIModule.setOfflineBanner(true);
 
+    // Check geolocation permission state
+    let permDenied = false;
     try {
-      const cached=getCachedToday();
-      if(cached && isCacheFresh(cached)) {
+      const perm = await navigator.permissions.query({ name: 'geolocation' });
+      permDenied = (perm.state === 'denied');
+      // Listen for changes (user might enable it in settings and come back)
+      perm.addEventListener('change', () => {
+        if (perm.state === 'granted') {
+          // User just enabled location — refresh!
+          onRelocate();
+        }
+      });
+    } catch(e) { /* permissions API not available */ }
+
+    const promptText = document.getElementById('location-prompt-text');
+    if (permDenied && promptText) {
+      promptText.innerHTML = '⚠️ 定位权限已被拒绝<br><small style="color:#888">点击下方「重新定位」查看如何开启</small>';
+    }
+
+    try {
+      const cached = getCachedToday();
+      if (cached && isCacheFresh(cached)) {
         renderFromCache(cached);
-        if(navigator.onLine && Date.now()-cached.cachedAt>3600000) {
-          setTimeout(()=>refreshRecommendations({silent:true}),5000);
+        // Always try GPS refresh in background (will prompt if permission is "prompt")
+        if (navigator.onLine) {
+          setTimeout(() => refreshRecommendations({ silent: true }), 2000);
         }
       } else {
-        await refreshRecommendations({silent:false});
+        await refreshRecommendations({ silent: false });
       }
     } catch(e) {
-      console.error('Init error:',e);
-      const cached=getCachedToday();
-      if(cached) { renderFromCache(cached); UIModule.showError('刷新失败，显示上次推荐'); }
-      else { UIModule.showError('加载失败，请检查网络连接',true); }
+      console.error('Init error:', e);
+      const cached = getCachedToday();
+      if (cached) { renderFromCache(cached); UIModule.showError('刷新失败，显示上次推荐'); }
+      else { UIModule.showError('加载失败，请检查网络连接', true); }
     }
 
     setupEventListeners();
 
     // Back-forward cache
-    window.addEventListener('pageshow',(e)=>{
-      if(e.persisted){ const c=getCachedToday(); if(c&&isCacheFresh(c)) renderFromCache(c); else if(c){ renderFromCache(c); refreshRecommendations({silent:true}); } }
+    window.addEventListener('pageshow', (e) => {
+      if (e.persisted) {
+        const c = getCachedToday();
+        if (c && isCacheFresh(c)) renderFromCache(c);
+        else if (c) { renderFromCache(c); refreshRecommendations({ silent: true }); }
+      }
     });
   }
 

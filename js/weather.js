@@ -87,18 +87,20 @@ const WeatherModule = (() => {
         coord = { ...DEFAULT, cityName: opts.manualCity, provinceName: '' };
       }
     } else {
-      // Try cache first (instant)
-      const cached = loadCache();
-      if (cached) {
-        coord = { lat: cached.lat, lon: cached.lon, cityName: cached.city||'当前位置', provinceName: cached.prov||'' };
-      } else {
-        // Try GPS
-        try {
-          const pos = await getGPSPosition();
-          coord = { lat: pos.lat, lon: pos.lon, cityName: '当前位置', provinceName: '' };
-          saveCache(pos.lat, pos.lon, '当前位置', '');
-        } catch(e) {
-          // GPS failed → use Beijing, user can type manually
+      // Try GPS first (triggers browser permission prompt if state is "prompt")
+      // Only fall back to cache if GPS fails
+      let gpsSuccess = false;
+      try {
+        const pos = await getGPSPosition();
+        coord = { lat: pos.lat, lon: pos.lon, cityName: '当前位置', provinceName: '' };
+        saveCache(pos.lat, pos.lon, '当前位置', '');
+        gpsSuccess = true;
+      } catch(e) {
+        // GPS failed — try cache
+        const cached = loadCache();
+        if (cached) {
+          coord = { lat: cached.lat, lon: cached.lon, cityName: cached.city||'当前位置', provinceName: cached.prov||'' };
+        } else {
           coord = DEFAULT;
         }
       }
