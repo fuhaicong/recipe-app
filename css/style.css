@@ -1040,49 +1040,78 @@ details[open] .details-summary::after {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 0;
+  padding: 4px 0 8px;
 }
-.meal-header-icon { font-size: 28px; line-height: 1; }
-.meal-header-title { font-size: 17px; font-weight: 700; color: var(--ink); }
+.meal-header-icon { font-size: 30px; line-height: 1; }
+.meal-header-title { font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: 0.02em; }
 
-.current-meal-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+.current-meal-cards { display: flex; flex-direction: column; gap: 8px; }
 
 .cm-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
   overflow: hidden;
-  transition: border-color var(--ease);
+  transition: all 0.25s ease;
 }
-.cm-card--active { border-color: var(--amber); }
+.cm-card--active {
+  border-color: var(--amber);
+  box-shadow: 0 2px 16px rgba(200,132,60,0.1);
+}
 
 .cm-card-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 12px;
+  padding: 14px 16px;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
-.cm-card-emoji { font-size: 24px; flex-shrink: 0; }
+.cm-card-bar:active { background: var(--amber-glow); }
+
+.cm-card-emoji {
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  background: var(--amber-glow);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.cm-card--active .cm-card-emoji { background: var(--amber-light); }
+
 .cm-card-info { flex: 1; min-width: 0; }
-.cm-card-name { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.3; }
-.cm-card-desc { font-size: 12px; color: var(--ink-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cm-card-meta { font-size: 11px; color: var(--ink-muted); margin-top: 3px; }
-.cm-card-score { font-size: 12px; font-weight: 600; color: var(--sage-deep); background: var(--sage-light); padding: 3px 8px; border-radius: var(--radius-full); flex-shrink: 0; }
+.cm-card-name { font-size: 16px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+.cm-card-desc { font-size: 13px; color: var(--ink-muted); margin-top: 2px; }
+.cm-card-meta { font-size: 12px; color: var(--ink-muted); margin-top: 4px; display: flex; gap: 12px; }
+.cm-card-score {
+  font-size: 13px; font-weight: 700;
+  color: var(--sage-deep); background: var(--sage-light);
+  padding: 4px 10px; border-radius: var(--radius-full);
+  flex-shrink: 0; letter-spacing: 0.02em;
+}
+.cm-card--active .cm-card-score { background: #D4EDDA; }
 
-.cm-card-body { padding: 0 14px 14px; display: none; }
+.cm-card-body { padding: 0 16px 16px; display: none; }
 .cm-card--active .cm-card-body { display: block; }
-.cm-card-body h4 { font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
-.cm-card-body ul, .cm-card-body ol { padding-left: 18px; font-size: 13px; color: var(--ink-light); line-height: 1.9; }
-.cm-card-body li::marker { color: var(--amber); }
 
-.cm-card-tags { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 14px 10px; }
-.cm-tag { font-size: 10px; padding: 2px 7px; border: 1px solid var(--border); border-radius: var(--radius-full); color: var(--ink-muted); }
+.cm-card-body h4 {
+  font-size: 14px; font-weight: 600; color: var(--ink);
+  margin: 12px 0 6px; padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.cm-card-body ul, .cm-card-body ol {
+  padding-left: 20px; font-size: 14px;
+  color: var(--ink-light); line-height: 2;
+}
+.cm-card-body li::marker { color: var(--amber); font-weight: 600; }
+
+.cm-card-tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px 12px; }
+.cm-tag {
+  font-size: 11px; padding: 3px 10px;
+  background: var(--amber-glow);
+  border: none; border-radius: var(--radius-full);
+  color: var(--amber-deep); font-weight: 500;
+}
 
 /* ==========================================================
    City Picker
