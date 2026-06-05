@@ -151,7 +151,7 @@ const UIModule = (() => {
     });
   }
 
-  return{$('$'),setText,setHTML,show,hide,esc,
+  return{$,setText,setHTML,show,hide,esc,
     renderTopBar,renderMealHeader,renderCurrentMeals,renderDayRecipes,renderTakeout,
     showBrowse,hideBrowse,renderBrowseList,renderBrowseDetail,
     showAdd,hideAdd,getAddData,clearAdd,showError,hideError,copyKeywords,getDisplayTags
