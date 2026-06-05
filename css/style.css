@@ -286,8 +286,10 @@ body::before {
 
 .weather-city {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .city-label {
@@ -302,6 +304,7 @@ body::before {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   letter-spacing: 0.03em;
+  width: 100%;
 }
 
 .weather-temp-block {
