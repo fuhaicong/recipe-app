@@ -510,10 +510,6 @@ const App = (() => {
     const btnRelocate = document.getElementById('btn-relocate');
     if (btnRelocate) btnRelocate.addEventListener('click', onRelocate);
 
-    // Meal refresh button
-    const btnRM = document.getElementById('btn-refresh-meal');
-    if (btnRM) btnRM.addEventListener('click', onRefreshMealClick);
-
     // Tab bar: switch active recipe
     const tabBar = document.getElementById('cm-tab-bar');
     if (tabBar) tabBar.addEventListener('click', (e) => {
@@ -592,5 +588,5 @@ const App = (() => {
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 
-  return { refreshRecommendations, getRecentRecommendations, getCachedToday, getCustomRecipes, saveCustomRecipe };
+  return { refreshRecommendations, getRecentRecommendations, getCachedToday, getCustomRecipes, saveCustomRecipe, refreshCurrentMeal: onRefreshMealClick };
 })();
