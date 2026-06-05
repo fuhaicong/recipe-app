@@ -67,9 +67,20 @@
       <div class="skeleton-line skeleton-line--text short"></div>
     </div>
 
+    <!-- Current Meal Time: 3 Recipe Cards -->
+    <section id="current-meal" hidden aria-label="当前时段推荐">
+      <div id="current-meal-header" class="meal-header">
+        <span id="meal-header-icon" class="meal-header-icon">🌤️</span>
+        <div>
+          <div id="meal-header-title" class="meal-header-title">现在是午餐时间</div>
+        </div>
+      </div>
+      <div id="current-meal-cards" class="current-meal-cards"></div>
+    </section>
+
     <!-- Today's 3 Meals -->
     <section id="today-meals" hidden aria-label="今日三餐推荐">
-      <h3 class="section-title">今日三餐</h3>
+      <h3 class="section-title">全天推荐</h3>
       <div id="today-meals-grid" class="meals-grid"></div>
     </section>
 

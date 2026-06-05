@@ -235,6 +235,44 @@ const UIModule = (() => {
   }
 
   /* ==========================================================
+     Current Meal Time Section
+     ========================================================== */
+  function renderCurrentMeal(mealTime, recipes) {
+    hide('loading-skeleton');
+    show('current-meal');
+
+    // Header
+    const headers = {breakfast:['🌅','现在是早餐时间'],lunch:['🌤️','现在是午餐时间'],snack:['🍵','下午茶时间'],dinner:['🌙','现在是晚餐时间'],late_night:['🌃','现在是夜宵时间']};
+    const h = headers[mealTime] || headers.lunch;
+    setText('meal-header-icon', h[0]);
+    setText('meal-header-title', h[1]);
+
+    // Cards — first one expanded by default
+    const container = $('current-meal-cards');
+    if (!container) return;
+    container.innerHTML = recipes.map((r, i) => {
+      const active = i === 0 ? ' cm-card--active' : '';
+      const tags = getDisplayTags(r.recipe.tags).slice(0, 5);
+      return '<div class="cm-card' + active + '" data-index="' + i + '">' +
+        '<div class="cm-card-bar">' +
+          '<span class="cm-card-emoji">' + r.recipe.emoji + '</span>' +
+          '<div class="cm-card-info">' +
+            '<div class="cm-card-name">' + esc(r.recipe.name.replace(r.recipe.emoji + ' ', '')) + '</div>' +
+            '<div class="cm-card-desc">' + esc(r.recipe.description) + '</div>' +
+            '<div class="cm-card-meta">⏱ ' + r.recipe.prepTimeMin + '分钟 · ' + (r.recipe.difficulty === 'easy' ? '简单' : r.recipe.difficulty === 'medium' ? '中等' : '挑战') + '</div>' +
+          '</div>' +
+          '<span class="cm-card-score">' + r.score + '%</span>' +
+        '</div>' +
+        '<div class="cm-card-body">' +
+          '<h4>食材</h4><ul>' + r.recipe.ingredients.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' +
+          '<h4>做法</h4><ol>' + r.recipe.steps.map(x => '<li>' + esc(x) + '</li>').join('') + '</ol>' +
+        '</div>' +
+        (tags.length ? '<div class="cm-card-tags">' + tags.map(t => '<span class="cm-tag">' + esc(t) + '</span>').join('') + '</div>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  /* ==========================================================
      Browse Overlay
      ========================================================== */
   function showBrowseOverlay() { show('browse-overlay'); document.body.style.overflow='hidden'; }
@@ -432,7 +470,7 @@ const UIModule = (() => {
     showLoading, showLocationPrompt, hideLocationPrompt,
     showError, hideError, setOfflineBanner, setRefreshEnabled,
     copyTakeoutKeywords, copySingleKeyword,
-    renderTodayMeals, showBrowseOverlay, hideBrowseOverlay, renderBrowseList,
+    renderTodayMeals, renderCurrentMeal, showBrowseOverlay, hideBrowseOverlay, renderBrowseList,
     renderBrowseDetail, showAddModal, hideAddModal, getAddFormData, clearAddForm,
   };
 })();

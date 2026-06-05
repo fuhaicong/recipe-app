@@ -60,6 +60,7 @@ const App = (() => {
     if (!cached) return;
     UIModule.hide('loading-skeleton');
     UIModule.renderWeatherBar(cached.context);
+    if (cached.currentRecs) UIModule.renderCurrentMeal(cached.context.mealTime, cached.currentRecs);
     if (cached.mealRecs) UIModule.renderTodayMeals(cached.mealRecs);
     if (cached.takeoutPrimary) UIModule.renderTakeoutSection(cached.takeoutPrimary);
   }
@@ -70,9 +71,12 @@ const App = (() => {
       UIModule.hide('loading-skeleton');
       var cityBtn = document.getElementById('city-name');
       if (cityBtn) cityBtn.innerHTML = '<svg width="14" height="14"><use href=\"#icon-pin\"/></svg> 北京';
+      const cRecs = getCurrentMealTop3(fb, []);
       const mealRecs = getMealRecommendations(fb, []);
-      const p = mealRecs['lunch']?.recipe || mealRecs['dinner']?.recipe;
-      UIModule.renderWeatherBar(fb); UIModule.renderTodayMeals(mealRecs);
+      const p = cRecs[0]?.recipe || mealRecs['lunch']?.recipe;
+      UIModule.renderWeatherBar(fb);
+      UIModule.renderCurrentMeal(fb.mealTime, cRecs);
+      UIModule.renderTodayMeals(mealRecs);
       if (p) UIModule.renderTakeoutSection(p);
     } catch(e) { UIModule.showError('加载失败，请刷新重试', true); }
   }
@@ -80,6 +84,15 @@ const App = (() => {
   /* ==========================================================
      Whole-Day Recommendations
      ========================================================== */
+  function getCurrentMealTop3(context, recentIds) {
+    const all = getAllRecipes();
+    const ctx = { ...context };
+    const scored = all.map(r => ({ recipe: r, score: RecipeModule.scoreRecipe(r, ctx, recentIds) })).sort((a, b) => b.score - a.score);
+    const seen = new Set(), results = [];
+    for (const s of scored) { if (seen.has(s.recipe.id)) continue; results.push(s); seen.add(s.recipe.id); if (results.length >= 3) break; }
+    return results;
+  }
+
   function getMealRecommendations(context, recentIds) {
     const allRecipes = getAllRecipes();
     const slots = ['breakfast','lunch','dinner','late_night'];
@@ -136,10 +149,15 @@ const App = (() => {
       // Render
       UIModule.hide('loading-skeleton');
       UIModule.renderWeatherBar(context);
+
+      // Current meal: top 3 recipes
+      const currentSlot = context.mealTime;
+      const cRecs = getCurrentMealTop3(context, recentIds);
+      UIModule.renderCurrentMeal(currentSlot, cRecs);
+
       UIModule.renderTodayMeals(mealRecs);
 
       // Pick current meal time's recipe as primary for takeout
-      const currentSlot = context.mealTime;
       const primary = mealRecs[currentSlot] ? mealRecs[currentSlot].recipe : mealRecs['lunch']?.recipe || mealRecs['dinner']?.recipe;
       if (primary) {
         UIModule.renderTakeoutSection(primary);
@@ -147,7 +165,7 @@ const App = (() => {
       }
 
       // Save cache
-      saveTodayCache({ context, mealRecs, takeoutPrimary: primary });
+      saveTodayCache({ context, currentRecs: cRecs, mealRecs, takeoutPrimary: primary });
       UIModule.setOfflineBanner(false);
 
     } catch (e) {
@@ -473,6 +491,18 @@ const App = (() => {
     // Relocate button
     const btnRelocate = document.getElementById('btn-relocate');
     if (btnRelocate) btnRelocate.addEventListener('click', onRelocate);
+
+    // Current meal cards: toggle expand
+    const cmCards = document.getElementById('current-meal-cards');
+    if (cmCards) cmCards.addEventListener('click', (e) => {
+      const bar = e.target.closest('.cm-card-bar');
+      if (!bar) return;
+      const card = bar.parentElement;
+      const wasActive = card.classList.contains('cm-card--active');
+      // Close all, open clicked one
+      cmCards.querySelectorAll('.cm-card').forEach(c => c.classList.remove('cm-card--active'));
+      if (!wasActive) card.classList.add('cm-card--active');
+    });
 
     // Today's meal slots (delegated)
     const mealsGrid=document.getElementById('today-meals-grid');
