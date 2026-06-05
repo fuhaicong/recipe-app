@@ -23,8 +23,12 @@ const WeatherModule = (() => {
       if (!navigator.geolocation) return reject(new Error('no_gps'));
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-        (err) => reject(new Error('denied')),
-        { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 }
+        (err) => reject(new Error(
+          err.code === 1 ? 'denied' :
+          err.code === 2 ? 'unavailable' :
+          err.code === 3 ? 'timeout' : 'error'
+        )),
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
       );
     });
   }
@@ -176,7 +180,7 @@ const WeatherModule = (() => {
       try {
         const pos = await Promise.race([
           getGPSPosition(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('gps_slow')), 2000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('gps_slow')), 5000))
         ]);
         const cityInfo = reverseCityName(pos.lat, pos.lon);
         coord = { lat: pos.lat, lon: pos.lon, cityName: cityInfo.cityName, provinceName: cityInfo.provinceName };

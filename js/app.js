@@ -270,17 +270,18 @@ const App = (() => {
         await refreshRecommendations({ silent: false });
       }
     } catch(e) {
-      if (permDenied || e.message === 'denied') {
+      if (e.message === 'denied') {
         if (promptText) {
           const isIOS = /iPhone|iPad|iOS/i.test(navigator.userAgent);
           const hint = isIOS
             ? '设置 → 隐私与安全性 → 定位服务 → Safari → 允许'
             : '浏览器地址栏左侧锁图标 → 权限 → 位置 → 允许';
-          promptText.innerHTML = '⚠️ 定位权限未开启<br><small style="color:#888">' + hint + '<br>或直接下方输入城市名↓</small>';
+          promptText.innerHTML = '⚠️ 定位权限未开启<br><small style="color:#888">' + hint + '</small>';
         }
+      } else if (e.message === 'timeout') {
+        if (promptText) promptText.innerHTML = '⚠️ 定位超时，请确保GPS已开启<br><small style="color:#888">或直接下方输入城市名</small>';
       } else {
-        UIModule.showError('定位失败，请在下方输入城市名');
-        setTimeout(() => UIModule.hideError(), 3000);
+        if (promptText) promptText.innerHTML = '⚠️ 定位失败，请直接下方输入城市名';
       }
     }
 
