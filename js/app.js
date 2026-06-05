@@ -59,16 +59,19 @@ window.App = (() => {
      ========================================================== */
   function renderFromCache(cached) {
     if (!cached) return;
-    currentContext = cached.context;
+    // Always use current meal time, not cached
+    var ctx = {...cached.context, mealTime: RecipeModule.getMealTime(new Date().getHours())};
+    currentContext = ctx;
     UIModule.hide('loading-skeleton');
-    UIModule.renderWeatherBar(cached.context);
-    if (cached.currentRecs) UIModule.renderCurrentMeal(cached.context.mealTime, cached.currentRecs);
+    UIModule.renderWeatherBar(ctx);
+    if (cached.currentRecs) UIModule.renderCurrentMeal(ctx.mealTime, cached.currentRecs);
     if (cached.mealRecs) UIModule.renderTodayMeals(cached.mealRecs);
     if (cached.takeoutPrimary) UIModule.renderTakeoutSection(cached.takeoutPrimary);
   }
 
   function renderFallback() {
-    const fb = {temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isRainy:false,isSnowy:false,isExtreme:false,isDay:true,humidity:50,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
+    var now = new Date();
+    var fb = {temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isRainy:false,isSnowy:false,isExtreme:false,isDay:true,humidity:50,season:'summer',mealTime:RecipeModule.getMealTime(now.getHours()),region:'universal',cityName:'北京',provinceName:'北京',dateStr:RecipeModule.formatDateStr(now),session:0};
     currentContext = fb;
     try {
       UIModule.hide('loading-skeleton');
