@@ -564,11 +564,8 @@ const App = (() => {
 
     setupEventListeners();
 
-    // Background: try location update after page is fully rendered (non-blocking)
-    setTimeout(() => {
-      refreshRecommendations({silent:true}).catch(()=>{});
-      checkPermissionInBackground();
-    }, 2000);
+    // Permission check in background only
+    setTimeout(() => { checkPermissionInBackground(); }, 2000);
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();

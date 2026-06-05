@@ -6421,7 +6421,6 @@ const RecipeModule = (() => {
       if (context.mealTime==='breakfast' && recipe.tags.includes('quick_easy')) score += 8;
     }
 
-    score += hashString(recipe.id + context.dateStr + context.session) % 11;
     if (recentIds && recentIds.includes(recipe.id)) score -= 15;
     return Math.max(0, Math.min(100, score));
   }
