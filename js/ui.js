@@ -242,35 +242,61 @@ const UIModule = (() => {
     hide('loading-skeleton');
     show('current-meal');
 
-    // Header
     const headers = {breakfast:['🌅','现在是早餐时间'],lunch:['🌤️','现在是午餐时间'],snack:['🍵','下午茶时间'],dinner:['🌙','现在是晚餐时间'],late_night:['🌃','现在是夜宵时间']};
     const h = headers[mealTime] || headers.lunch;
     setText('meal-header-icon', h[0]);
     setText('meal-header-title', h[1]);
 
-    // Cards — first one expanded by default
-    const container = $('current-meal-cards');
-    if (!container) return;
-    container.innerHTML = recipes.map((r, i) => {
-      const active = i === 0 ? ' cm-card--active' : '';
-      const tags = getDisplayTags(r.recipe.tags).slice(0, 5);
-      return '<div class="cm-card' + active + '" data-index="' + i + '">' +
-        '<div class="cm-card-bar">' +
-          '<span class="cm-card-emoji">' + r.recipe.emoji + '</span>' +
-          '<div class="cm-card-info">' +
-            '<div class="cm-card-name">' + esc(r.recipe.name.replace(r.recipe.emoji + ' ', '')) + '</div>' +
-            '<div class="cm-card-desc">' + esc(r.recipe.description) + '</div>' +
-            '<div class="cm-card-meta">⏱ ' + r.recipe.prepTimeMin + '分钟 · ' + (r.recipe.difficulty === 'easy' ? '简单' : r.recipe.difficulty === 'medium' ? '中等' : '挑战') + '</div>' +
-          '</div>' +
-          '<span class="cm-card-score">' + r.score + '%</span>' +
+    // Tab bar (3 tabs)
+    const tabBar = $('cm-tab-bar');
+    if (tabBar) {
+      tabBar.innerHTML = recipes.map((r, i) => {
+        const active = i === 0 ? ' cm-tab--active' : '';
+        return '<button class="cm-tab' + active + '" data-index="' + i + '">' +
+          '<span class="cm-tab-emoji">' + r.recipe.emoji + '</span>' +
+          '<span class="cm-tab-name">' + esc(r.recipe.name.replace(r.recipe.emoji + ' ', '')) + '</span>' +
+          '<span class="cm-tab-score">' + r.score + '%</span>' +
+        '</button>';
+      }).join('');
+    }
+
+    // Detail panel for active tab (index 0)
+    const detail = $('cm-detail');
+    if (detail) {
+      const r = recipes[0];
+      const tags = getDisplayTags(r.recipe.tags).slice(0, 6);
+      detail.innerHTML =
+        '<div class="cm-detail-meta">' +
+          '<span>⏱ ' + r.recipe.prepTimeMin + '分钟</span>' +
+          '<span>· ' + (r.recipe.difficulty === 'easy' ? '简单' : r.recipe.difficulty === 'medium' ? '中等' : '挑战') + '</span>' +
+          '<span class="cm-detail-score">' + r.score + '% 匹配</span>' +
         '</div>' +
-        '<div class="cm-card-body">' +
-          '<h4>食材</h4><ul>' + r.recipe.ingredients.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' +
-          '<h4>做法</h4><ol>' + r.recipe.steps.map(x => '<li>' + esc(x) + '</li>').join('') + '</ol>' +
-        '</div>' +
-        (tags.length ? '<div class="cm-card-tags">' + tags.map(t => '<span class="cm-tag">' + esc(t) + '</span>').join('') + '</div>' : '') +
-      '</div>';
-    }).join('');
+        '<div class="cm-detail-section"><h4>食材</h4><ul>' + r.recipe.ingredients.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>' +
+        '<div class="cm-detail-section"><h4>做法</h4><ol>' + r.recipe.steps.map(x => '<li>' + esc(x) + '</li>').join('') + '</ol></div>' +
+        (tags.length ? '<div class="cm-detail-tags">' + tags.map(t => '<span class="cm-tag">' + esc(t) + '</span>').join('') + '</div>' : '');
+    }
+  }
+
+  function switchCurrentMealTab(index, recipes) {
+    // Update tab active state
+    const tabs = document.querySelectorAll('.cm-tab');
+    tabs.forEach(t => t.classList.remove('cm-tab--active'));
+    if (tabs[index]) tabs[index].classList.add('cm-tab--active');
+
+    // Update detail panel
+    const detail = $('cm-detail');
+    if (!detail || !recipes[index]) return;
+    const r = recipes[index];
+    const tags = getDisplayTags(r.recipe.tags).slice(0, 6);
+    detail.innerHTML =
+      '<div class="cm-detail-meta">' +
+        '<span>⏱ ' + r.recipe.prepTimeMin + '分钟</span>' +
+        '<span>· ' + (r.recipe.difficulty === 'easy' ? '简单' : r.recipe.difficulty === 'medium' ? '中等' : '挑战') + '</span>' +
+        '<span class="cm-detail-score">' + r.score + '% 匹配</span>' +
+      '</div>' +
+      '<div class="cm-detail-section"><h4>食材</h4><ul>' + r.recipe.ingredients.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul></div>' +
+      '<div class="cm-detail-section"><h4>做法</h4><ol>' + r.recipe.steps.map(x => '<li>' + esc(x) + '</li>').join('') + '</ol></div>' +
+      (tags.length ? '<div class="cm-detail-tags">' + tags.map(t => '<span class="cm-tag">' + esc(t) + '</span>').join('') + '</div>' : '');
   }
 
   /* ==========================================================
@@ -471,7 +497,7 @@ const UIModule = (() => {
     showLoading, showLocationPrompt, hideLocationPrompt,
     showError, hideError, setOfflineBanner, setRefreshEnabled,
     copyTakeoutKeywords, copySingleKeyword,
-    renderTodayMeals, renderCurrentMeal, showBrowseOverlay, hideBrowseOverlay, renderBrowseList,
+    renderTodayMeals, renderCurrentMeal, switchCurrentMealTab, showBrowseOverlay, hideBrowseOverlay, renderBrowseList,
     renderBrowseDetail, showAddModal, hideAddModal, getAddFormData, clearAddForm,
   };
 })();

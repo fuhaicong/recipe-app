@@ -492,16 +492,16 @@ const App = (() => {
     const btnRelocate = document.getElementById('btn-relocate');
     if (btnRelocate) btnRelocate.addEventListener('click', onRelocate);
 
-    // Current meal cards: toggle expand
-    const cmCards = document.getElementById('current-meal-cards');
-    if (cmCards) cmCards.addEventListener('click', (e) => {
-      const bar = e.target.closest('.cm-card-bar');
-      if (!bar) return;
-      const card = bar.parentElement;
-      const wasActive = card.classList.contains('cm-card--active');
-      // Close all, open clicked one
-      cmCards.querySelectorAll('.cm-card').forEach(c => c.classList.remove('cm-card--active'));
-      if (!wasActive) card.classList.add('cm-card--active');
+    // Tab bar: switch active recipe
+    const tabBar = document.getElementById('cm-tab-bar');
+    if (tabBar) tabBar.addEventListener('click', (e) => {
+      const tab = e.target.closest('.cm-tab');
+      if (!tab) return;
+      const idx = parseInt(tab.dataset.index);
+      // Get current recipes from cache
+      const cached = getCachedToday();
+      const recs = cached?.currentRecs || [];
+      if (recs[idx]) UIModule.switchCurrentMealTab(idx, recs);
     });
 
     // Today's meal slots (delegated)
