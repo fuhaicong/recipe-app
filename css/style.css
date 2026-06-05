@@ -282,6 +282,7 @@ body::before {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 .weather-city {
@@ -290,6 +291,8 @@ body::before {
   align-items: center;
   gap: 4px;
   flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .city-label {
@@ -1346,7 +1349,7 @@ select.form-input {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 12px;
+  padding: 5px 10px;
   flex-shrink: 0;
   background: none;
   border: 1px solid var(--color-border);
@@ -1357,6 +1360,8 @@ select.form-input {
   font-size: var(--text-xs);
   transition: all var(--ease-out);
   white-space: nowrap;
+  margin-left: 2px;
+  margin-right: 6px;
 }
 
 .btn-relocate:active { background: var(--amber-glow); border-color: var(--amber); color: var(--amber); }
