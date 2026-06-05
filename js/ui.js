@@ -28,6 +28,7 @@ const UIModule = (() => {
     div.textContent = str;
     return div.innerHTML;
   }
+  var esc = escapeHtml;
 
   /* ==========================================================
      Weather SVG Icon Mapping
