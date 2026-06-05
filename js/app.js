@@ -2,7 +2,7 @@
    app.js — Main Application Orchestrator v2
    ============================================================ */
 
-const App = (() => {
+window.App = (() => {
   const STORAGE_KEY = 'recipe_today';
   const HISTORY_KEY = 'recipe_history';
   const CUSTOM_KEY = 'recipe_custom';
@@ -191,17 +191,16 @@ const App = (() => {
   }
 
   function onRefreshMealClick() {
-    if (!currentContext) return;
+    if (!currentContext) {
+      // Fallback: use default context
+      currentContext = {temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isDay:true,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
+    }
     WeatherModule.incrementRefreshCount();
     const recentIds = getRecentRecommendations();
     const cRecs = getCurrentMealTop3(currentContext, recentIds);
     UIModule.renderCurrentMeal(currentContext.mealTime, cRecs);
-    // Update cache
     const cached = getCachedToday();
-    if (cached) {
-      cached.currentRecs = cRecs;
-      saveTodayCache(cached);
-    }
+    if (cached) { cached.currentRecs = cRecs; saveTodayCache(cached); }
   }
   function onCitySubmit(city) {
     if (!city||!city.trim()) return;
