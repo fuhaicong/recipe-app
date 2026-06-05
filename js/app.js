@@ -437,12 +437,12 @@ const App = (() => {
   /* ==========================================================
      Init
      ========================================================== */
-  async function init() {
+  function init() {
     window.addEventListener('online',()=>UIModule.setOfflineBanner(false));
     window.addEventListener('offline',()=>UIModule.setOfflineBanner(true));
     if(!navigator.onLine) UIModule.setOfflineBanner(true);
 
-    // STEP 1: Render IMMEDIATELY with defaults (no waiting for anything)
+    // Render IMMEDIATELY — zero async, zero API
     const cached = getCachedToday();
     if (cached && isCacheFresh(cached)) {
       renderFromCache(cached);
@@ -450,36 +450,13 @@ const App = (() => {
       renderFallback();
     }
 
-    // STEP 2: Try real location+weather in background (silent — don't hide recipes!)
-    try {
-      await refreshRecommendations({silent:true});
-    } catch(e) {
-      console.error('Refresh failed, keeping defaults:', e);
-    }
-
-    // STEP 3: Permissions check in background
-    setTimeout(() => {
-      try {
-        navigator.permissions.query({name:'geolocation'}).then(perm => {
-          if (perm.state === 'denied') {
-            const pt = document.getElementById('location-prompt-text');
-            if (pt) pt.innerHTML = '⚠️ 定位权限已被拒绝<br><small>点击重新定位查看如何开启</small>';
-          }
-          perm.addEventListener('change', () => { if (perm.state==='granted') onRelocate(); });
-        }).catch(()=>{});
-      } catch(e) {}
-    }, 500);
-
     setupEventListeners();
 
-    // Back-forward cache
-    window.addEventListener('pageshow', (e) => {
-      if (e.persisted) {
-        const c = getCachedToday();
-        if (c && isCacheFresh(c)) renderFromCache(c);
-        else { renderFallback(); refreshRecommendations({silent:true}).catch(()=>{}); }
-      }
-    });
+    // Background: try location update after page is fully rendered (non-blocking)
+    setTimeout(() => {
+      refreshRecommendations({silent:true}).catch(()=>{});
+      checkPermissionInBackground();
+    }, 2000);
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
