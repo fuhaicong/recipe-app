@@ -252,7 +252,7 @@ const App = (() => {
   async function onRelocate() {
     const btn = document.getElementById('btn-relocate');
     const promptText = document.getElementById('location-prompt-text');
-    if (btn) { btn.disabled = true; btn.textContent = '定位中...'; }
+    if (btn) { btn.disabled = true; }
 
     let permDenied = false;
     try {
@@ -285,7 +285,7 @@ const App = (() => {
       }
     }
 
-    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14"><use href="#icon-pin"/></svg> 重新定位'; }
+    if (btn) { btn.disabled = false; }
   }
 
   function onMealSlotClick(recipeId) {
