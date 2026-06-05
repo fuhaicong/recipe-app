@@ -271,21 +271,11 @@ const App = (() => {
         await refreshRecommendations({ silent: false });
       }
     } catch(e) {
-      if (permDenied || e.message === 'denied') {
-        if (promptText) {
-          const isIOS = /iPhone|iPad|iOS/i.test(navigator.userAgent);
-          const hint = isIOS
-            ? '设置 → 隐私与安全性 → 定位服务 → Safari → 允许'
-            : '浏览器地址栏左侧锁图标 → 权限 → 位置 → 允许';
-          promptText.innerHTML = '⚠️ 定位权限未开启<br><small style="color:#888">' + hint + '<br>或直接下方输入城市名↓</small>';
-        }
-      } else {
-        UIModule.showError('定位失败，请在下方输入城市名');
-        setTimeout(() => UIModule.hideError(), 3000);
-      }
+      // GPS failed — revert city name, open city picker as fallback
+      var cached = WeatherModule.getCachedCoords ? null : null;
+      // Just open the city picker so user can manually choose
+      openCityPicker();
     }
-
-    if (cnText) cnText.textContent = '定位失败';
   }
 
   function onMealSlotClick(recipeId) {
