@@ -1345,16 +1345,18 @@ select.form-input {
 .btn-relocate {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 30px; height: 30px;
-  padding: 0;
+  gap: 4px;
+  padding: 4px 12px;
   flex-shrink: 0;
   background: none;
-  border: 1.5px solid var(--color-border);
-  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
   cursor: pointer;
-  color: var(--color-text-muted);
+  color: var(--ink-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
   transition: all var(--ease-out);
+  white-space: nowrap;
 }
 
 .btn-relocate:active { background: var(--amber-glow); border-color: var(--amber); color: var(--amber); }
