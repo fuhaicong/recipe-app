@@ -1,465 +1,245 @@
 /* ============================================================
-   app.js — Main Application Orchestrator v2
+   app.js — Main Orchestrator v15
    ============================================================ */
-
 const App = (() => {
-  const STORAGE_KEY = 'recipe_today';
-  const HISTORY_KEY = 'recipe_history';
-  const CUSTOM_KEY = 'recipe_custom';
+  const SK='rt',HK='rh',CK='rc3';
 
-  /* ==========================================================
-     LocalStorage Helpers
-     ========================================================== */
-  function getCachedToday() {
-    try { const r=localStorage.getItem(STORAGE_KEY); return r?JSON.parse(r):null; } catch(e) { return null; }
+  /* ── Storage ── */
+  function getCached(k,ttl){
+    try{const r=localStorage.getItem(k);if(!r)return null;const d=JSON.parse(r);return(Date.now()-d.t<ttl)?d:null}catch(e){return null}
   }
-  function saveTodayCache(data) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({...data, cachedAt: Date.now()})); } catch(e) {}
-  }
-  function isCacheFresh(cached) {
-    if (!cached||!cached.cachedAt) return false;
-    const now=new Date(), cd=new Date(cached.cachedAt);
-    const cacheDay=new Date(cd); if(cacheDay.getHours()<6) cacheDay.setDate(cacheDay.getDate()-1);
-    const nowDay=new Date(now); if(now.getHours()<6) nowDay.setDate(nowDay.getDate()-1);
-    return cacheDay.toDateString()===nowDay.toDateString();
-  }
-  function getRecentRecommendations() {
-    try { const r=localStorage.getItem(HISTORY_KEY); return r?JSON.parse(r):[]; } catch(e) { return []; }
-  }
-  function addToHistory(recipeId) {
-    try { const h=getRecentRecommendations(); h.unshift(recipeId); localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0,14))); } catch(e) {}
-  }
+  function setCached(k,v){try{localStorage.setItem(k,JSON.stringify({...v,t:Date.now()}))}catch(e){}}
+  function getCachedToday(){return getCached(SK,86400000)}
+  function saveCachedToday(d){setCached(SK,d)}
+  function isCacheFresh(c){if(!c||!c.t)return false;const n=new Date(),cd=new Date(c.t);if(cd.getHours()<6)cd.setDate(cd.getDate()-1);const nd=new Date(n);if(nd.getHours()<6)nd.setDate(nd.getDate()-1);return cd.toDateString()===nd.toDateString()}
+  function getHistory(){try{const r=localStorage.getItem(HK);return r?JSON.parse(r):[]}catch(e){return[]}}
+  function addHistory(id){const h=getHistory();h.unshift(id);localStorage.setItem(HK,JSON.stringify(h.slice(0,14)))}
+  function getCustom(){try{const r=localStorage.getItem(CK);return r?JSON.parse(r):[]}catch(e){return[]}}
+  function saveCustom(r){const l=getCustom();l.unshift(r);localStorage.setItem(CK,JSON.stringify(l))}
+  function getAllRecipes(){const c=getCustom();return c.length?[...RecipeModule.RECIPES,...c.filter(r=>!RecipeModule.RECIPES.some(b=>b.name===r.name))]:RecipeModule.RECIPES}
 
-  /* ==========================================================
-     Custom Recipes (LocalStorage)
-     ========================================================== */
-  function getCustomRecipes() {
-    try { const r=localStorage.getItem(CUSTOM_KEY); return r?JSON.parse(r):[]; } catch(e) { return []; }
+  /* ── Recommendations ── */
+  function getMealRecs(context,recentIds,count){
+    const all=getAllRecipes();
+    const ctx={...context};
+    const scored=all.map(r=>({recipe:r,score:RecipeModule.scoreRecipe(r,ctx,recentIds)})).sort((a,b)=>b.score-a.score);
+    const seen=new Set();const results=[];
+    for(const s of scored){if(seen.has(s.recipe.id))continue;results.push({recipe:s.recipe,score:s.score});seen.add(s.recipe.id);if(results.length>=count)break}
+    return results;
   }
-  function saveCustomRecipe(recipe) {
-    const list=getCustomRecipes(); list.unshift(recipe); localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
-  }
-  function deleteCustomRecipe(id) {
-    const list=getCustomRecipes().filter(r=>r.id!==id); localStorage.setItem(CUSTOM_KEY, JSON.stringify(list));
-  }
-
-  /** Merge custom recipes into the main pool */
-  function getAllRecipes() {
-    const custom = getCustomRecipes();
-    if (custom.length===0) return RecipeModule.RECIPES;
-    // Deduplicate with built-in recipes (by name similarity)
-    const builtInNames = new Set(RecipeModule.RECIPES.map(r=>r.name));
-    const uniqueCustom = custom.filter(r=>!builtInNames.has(r.name));
-    return [...RecipeModule.RECIPES, ...uniqueCustom];
-  }
-
-  /* ==========================================================
-     Render from Cache
-     ========================================================== */
-  function renderFromCache(cached) {
-    if (!cached) return;
-    UIModule.hide('loading-skeleton');
-    UIModule.renderWeatherBar(cached.context);
-    if (cached.mealRecs) UIModule.renderTodayMeals(cached.mealRecs);
-    if (cached.takeoutPrimary) UIModule.renderTakeoutSection(cached.takeoutPrimary);
-  }
-
-  function renderFallback() {
-    const fb = {temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isRainy:false,isSnowy:false,isExtreme:false,isDay:true,humidity:50,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
-    try {
-      UIModule.hide('loading-skeleton');
-      const mealRecs = getMealRecommendations(fb, []);
-      const p = mealRecs['lunch']?.recipe || mealRecs['dinner']?.recipe;
-      UIModule.renderWeatherBar(fb); UIModule.renderTodayMeals(mealRecs);
-      if (p) UIModule.renderTakeoutSection(p);
-    } catch(e) { UIModule.showError('加载失败，请刷新重试', true); }
-  }
-
-  /* ==========================================================
-     Whole-Day Recommendations
-     ========================================================== */
-  function getMealRecommendations(context, recentIds) {
-    const allRecipes = getAllRecipes();
-    const slots = ['breakfast','lunch','dinner','late_night'];
-    const results = {};
-    const used = new Set();
-
-    slots.forEach(slot => {
-      const ctx = {...context, mealTime: slot};
-      // Score all recipes for this meal slot
-      const scored = allRecipes
-        .map(r => ({ recipe: r, score: RecipeModule.scoreRecipe(r, ctx, recentIds) }))
-        .filter(s => !used.has(s.recipe.id))
-        .sort((a,b) => b.score - a.score);
-
-      if (scored.length > 0) {
-        results[slot] = scored[0];
-        used.add(scored[0].recipe.id);
-      }
+  function getDayRecs(context,recentIds){
+    const all=getAllRecipes();const slots=['breakfast','lunch','dinner','late_night'];
+    const results={};const used=new Set();
+    slots.forEach(slot=>{
+      const ctx={...context,mealTime:slot};
+      const scored=all.map(r=>({recipe:r,score:RecipeModule.scoreRecipe(r,ctx,recentIds)})).filter(s=>!used.has(s.recipe.id)).sort((a,b)=>b.score-a.score);
+      if(scored.length){results[slot]=scored[0];used.add(scored[0].recipe.id)}
     });
     return results;
   }
 
-  /* ==========================================================
-     Refresh Logic
-     ========================================================== */
-  async function refreshRecommendations({ silent, manualCity } = {}) {
-    if (silent) {
-      // Don't hide existing content, but still disable refresh during background update
-    } else {
-      UIModule.showLoading();
+  /* ── Render ── */
+  let currentMeals=[],dayRecs={},currentContext=null;
+
+  function render(context,recentIds){
+    currentContext=context;
+    UIModule.renderTopBar(context);
+    UIModule.renderMealHeader(context.mealTime);
+
+    // 3 recipes for current meal time
+    currentMeals=getMealRecs(context,recentIds,3);
+    UIModule.renderCurrentMeals(currentMeals,0); // first one expanded by default
+
+    // Day recommendations
+    dayRecs=getDayRecs(context,recentIds);
+    UIModule.renderDayRecipes(dayRecs);
+
+    // Takeout from top recipe
+    if(currentMeals.length)UIModule.renderTakeout(currentMeals[0].recipe);
+
+    // Track
+    addHistory(currentMeals[0]?.recipe?.id);
+    saveCachedToday({context,currentMeals,dayRecs});
+  }
+
+  /* ── Refresh ── */
+  async function refresh(opts={}){
+    const btnR=$('btn-refresh'),btnR2=$('btn-refresh2');
+    if(btnR)btnR.disabled=true;if(btnR2)btnR2.disabled=true;
+    try{
+      const ctx=await WeatherModule.getWeatherContext(opts);
+      const recentIds=getHistory();
+      render(ctx,recentIds);
+    }catch(e){
+      console.error(e);
+      const fb={temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isDay:true,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
+      render(fb,[]);
     }
-    UIModule.setRefreshEnabled(false);
-    UIModule.hideError();
-
-    try {
-      let context;
-      try {
-        context = await WeatherModule.getWeatherContext({ manualCity });
-      } catch (geoErr) {
-        const code = geoErr.message;
-        if (['GEOLOCATION_DENIED','GEOLOCATION_UNAVAILABLE','GEOLOCATION_TIMEOUT','GEOLOCATION_NOT_SUPPORTED'].includes(code)) {
-          UIModule.showLocationPrompt(code); UIModule.setRefreshEnabled(true); return;
-        }
-        throw geoErr;
-      }
-      UIModule.hideLocationPrompt();
-      // Update prompt text to show we got location
-      const promptText = document.getElementById('location-prompt-text');
-      if (promptText) promptText.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-1px;margin-right:4px"><use href="#icon-pin"/></svg> 当前城市：<strong>'+context.cityName+'</strong>';
-
-      const recentIds = getRecentRecommendations();
-      const mealRecs = getMealRecommendations(context, recentIds);
-
-      // Render
-      UIModule.hide('loading-skeleton');
-      UIModule.renderWeatherBar(context);
-      UIModule.renderTodayMeals(mealRecs);
-
-      // Pick current meal time's recipe as primary for takeout
-      const currentSlot = context.mealTime;
-      const primary = mealRecs[currentSlot] ? mealRecs[currentSlot].recipe : mealRecs['lunch']?.recipe || mealRecs['dinner']?.recipe;
-      if (primary) {
-        UIModule.renderTakeoutSection(primary);
-        addToHistory(primary.id);
-      }
-
-      // Save cache
-      saveTodayCache({ context, mealRecs, takeoutPrimary: primary });
-      UIModule.setOfflineBanner(false);
-
-    } catch (e) {
-      console.error('Refresh failed:', e);
-      const stale = getCachedToday();
-      if (stale) { renderFromCache(stale); UIModule.showError('刷新失败，显示上次结果'); }
-      else { UIModule.showError('加载失败，请检查网络后重试', true); }
-    } finally {
-      UIModule.setRefreshEnabled(true);
-    }
+    if(btnR)btnR.disabled=false;if(btnR2)btnR2.disabled=false;
   }
 
-  /* ==========================================================
-     Event Handlers
-     ========================================================== */
-  function onRefreshClick() {
-    WeatherModule.incrementRefreshCount();
-    refreshRecommendations({ silent: false });
+  /* ── City Edit ── */
+  function openCityEdit(){
+    const bar=$('top-city'),edit=$('city-edit'),input=$('city-edit-input');
+    bar.hidden=true;edit.hidden=false;input.value='';input.focus();
   }
-  function onCitySubmit(city) {
-    if (!city||!city.trim()) return;
-    UIModule.hideLocationPrompt();
-    refreshRecommendations({ silent: false, manualCity: city.trim() });
-  }
-  function onRetryClick() { refreshRecommendations({ silent: false }); }
-  function onCopyKeywords() {
-    const cached = getCachedToday();
-    if (cached&&cached.takeoutPrimary) UIModule.copyTakeoutKeywords(cached.takeoutPrimary);
-  }
-  async function onRelocate() {
-    const btn = document.getElementById('btn-relocate');
-    const promptText = document.getElementById('location-prompt-text');
-    if (btn) { btn.disabled = true; btn.textContent = '定位中...'; }
-
-    // Check permission state first
-    let permDenied = false;
-    try {
-      const perm = await navigator.permissions.query({ name: 'geolocation' });
-      permDenied = (perm.state === 'denied');
-    } catch(e) { /* permissions API not supported */ }
-
-    // Clear old cache
-    try { localStorage.removeItem('rc2'); } catch(e) {}
-
-    try {
-      const pos = await WeatherModule.getCurrentPosition();
-      if (pos && pos.lat != null) {
-        WeatherModule.saveCachedCoords(pos.lat, pos.lon, '当前位置', '');
-        if (promptText) promptText.innerHTML = '📍 定位成功！当前：<strong>附近位置</strong>';
-        await refreshRecommendations({ silent: false });
-      }
-    } catch(e) {
-      if (permDenied || e.message === 'denied') {
-        // Permission permanently denied — tell user how to fix
-        if (promptText) {
-          const isIOS = /iPhone|iPad|iOS/i.test(navigator.userAgent);
-          const hint = isIOS
-            ? '设置 → 隐私与安全性 → 定位服务 → Safari → 允许'
-            : '浏览器地址栏左侧锁图标 → 权限 → 位置 → 允许';
-          promptText.innerHTML = '⚠️ 定位权限未开启<br><small style="color:#888">' + hint + '<br>或直接下方输入城市名↓</small>';
-        }
-      } else {
-        UIModule.showError('定位失败，请在下方输入城市名');
-        setTimeout(() => UIModule.hideError(), 3000);
-      }
-    }
-
-    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14"><use href="#icon-pin"/></svg> 重新定位'; }
+  function closeCityEdit(){const bar=$('top-city'),edit=$('city-edit');bar.hidden=false;edit.hidden=true}
+  async function submitCity(){
+    const input=$('city-edit-input');const city=input.value.trim();
+    if(!city)return;
+    closeCityEdit();
+    await refresh({manualCity:city});
   }
 
-  function onMealSlotClick(recipeId) {
-    if (!recipeId) return;
-    const allRecipes = getAllRecipes();
-    const recipe = allRecipes.find(r=>r.id===recipeId);
-    if (!recipe) return;
-    // Show detail in a simple alert style or swap takeout section
-    UIModule.renderTakeoutSection(recipe);
-    window.scrollTo({ top: document.getElementById('takeout-section').offsetTop - 20, behavior: 'smooth' });
-  }
-
-  /* ==========================================================
-     Browse Recipes
-     ========================================================== */
-  const BROWSE_PAGE_SIZE = 30;
-  let browseState = { query:'', activeTag:'', page:0, allFiltered:[] };
-
-  function openBrowse() {
-    browseState = { query:'', activeTag:'', page:0, allFiltered:[] };
-    UIModule.showBrowseOverlay();
-    filterAndRenderBrowse();
-    renderBrowseTags();
-  }
-
-  function closeBrowse() { UIModule.hideBrowseOverlay(); }
-
-  function filterAndRenderBrowse() {
-    const allRecipes = getAllRecipes();
-    const q = browseState.query.toLowerCase();
-    const tag = browseState.activeTag;
-
-    let filtered = allRecipes;
-    if (q) filtered = filtered.filter(r =>
-      r.name.toLowerCase().includes(q) ||
-      r.description.toLowerCase().includes(q) ||
-      r.ingredients.some(i=>i.toLowerCase().includes(q))
-    );
-    if (tag) filtered = filtered.filter(r => r.tags.includes(tag));
-
-    browseState.allFiltered = filtered;
-    browseState.page = 0;
-    renderBrowsePage();
-  }
-
-  function renderBrowsePage() {
-    const filtered = browseState.allFiltered;
-    const start = 0;
-    const end = (browseState.page + 1) * BROWSE_PAGE_SIZE;
-    const items = filtered.slice(start, end);
-    const hasMore = end < filtered.length;
-
-    UIModule.renderBrowseList(
-      { items, total: filtered.length, hasMore },
-      browseState.query,
-      browseState.activeTag
-    );
-  }
-
-  function loadMoreBrowse() {
-    browseState.page++;
-    renderBrowsePage();
-  }
-
-  function renderBrowseTags() {
-    const container = document.getElementById('browse-tags');
-    if (!container) return;
-    const tags = ['stir_fry','soup','noodle','cold_dish','stew','rice','hotpot','steam','quick_easy','spicy','vegetarian'];
-    const tagLabels = { stir_fry:'小炒',soup:'汤羹',noodle:'面食',cold_dish:'凉拌',stew:'炖菜',rice:'米饭',hotpot:'火锅',steam:'清蒸',quick_easy:'快手',spicy:'辣',vegetarian:'素食' };
-    container.innerHTML = tags.map(t => {
-      const active = browseState.activeTag===t ? ' active' : '';
-      return '<button class="browse-tag-chip'+active+'" data-tag="'+t+'">'+ (tagLabels[t]||t) +'</button>';
-    }).join('');
-  }
-
-  function onBrowseTagClick(tag) {
-    if (browseState.activeTag===tag) { browseState.activeTag=''; }
-    else { browseState.activeTag=tag; }
-    filterAndRenderBrowse();
-    renderBrowseTags();
-  }
-
-  function onBrowseSearch(e) {
-    browseState.query = e.target.value;
-    filterAndRenderBrowse();
-  }
-
-  function onBrowseItemClick(recipeId) {
-    const allRecipes = getAllRecipes();
-    const recipe = allRecipes.find(r=>r.id===recipeId);
-    if (!recipe) return;
-
-    // Toggle detail inline
-    const item = document.querySelector('[data-recipe-id="'+recipeId+'"].browse-item');
-    if (!item) return;
-    const existing = item.nextElementSibling;
-    if (existing && existing.classList.contains('browse-detail')) {
-      existing.remove();
-    } else {
-      const detail = document.createElement('div');
-      detail.className = 'browse-detail';
-      detail.innerHTML = UIModule.renderBrowseDetail(recipe);
-      item.after(detail);
-      detail.scrollIntoView({ behavior:'smooth', block:'nearest' });
-    }
-  }
-
-  /* ==========================================================
-     Add Custom Recipe
-     ========================================================== */
-  function openAddModal() { UIModule.showAddModal(); }
-  function closeAddModal() { UIModule.hideAddModal(); UIModule.clearAddForm(); }
-
-  function onSubmitRecipe(e) {
-    e.preventDefault();
-    const recipe = UIModule.getAddFormData();
-    if (!recipe) { UIModule.showError('请填写菜名、食材和做法'); setTimeout(()=>UIModule.hideError(),2000); return; }
-    saveCustomRecipe(recipe);
-    UIModule.clearAddForm();
-    UIModule.hideAddModal();
-    // Brief success feedback
-    const fab = document.getElementById('fab-add');
-    if (fab) { fab.style.background='var(--sage)'; setTimeout(()=>{fab.style.background=''},800); }
-  }
-
-  /* ==========================================================
-     Pull-to-Refresh
-     ========================================================== */
-  function setupPullToRefresh() {
-    let startY=0, pulling=false, pulled=0;
-    const threshold=70, indicator=document.getElementById('ptr-indicator');
-    document.addEventListener('touchstart',(e)=>{ if(window.scrollY<=0){ startY=e.touches[0].clientY; pulling=true; } },{passive:true});
-    document.addEventListener('touchmove',(e)=>{
-      if(!pulling)return; const dy=e.touches[0].clientY-startY;
-      if(dy>0){ pulled=Math.min(dy*0.4,60); indicator.style.transform='translateX(-50%) translateY('+pulled+'px)';
-        if(dy>threshold) indicator.classList.add('ptr-ready'); else indicator.classList.remove('ptr-ready'); }
-    },{passive:true});
-    document.addEventListener('touchend',()=>{
-      if(!pulling)return; pulling=false;
-      if(pulled>threshold*0.5) onRefreshClick();
-      indicator.style.transform='translateX(-50%) translateY(-64px)'; indicator.classList.remove('ptr-ready');
+  /* ── Card Clicks ── */
+  function onCurrentCardClick(index,recipeId){
+    // Toggle active card
+    currentMeals.forEach((m,i)=>{
+      const card=document.querySelector('#current-recipes .recipe-card[data-index="'+i+'"]');
+      if(!card)return;
+      if(i===index)card.classList.toggle('recipe-card--active');
+      else card.classList.remove('recipe-card--active');
     });
+    // Update takeout
+    const meal=currentMeals.find(m=>m.recipe.id===recipeId);
+    if(meal)UIModule.renderTakeout(meal.recipe);
   }
 
-  /* ==========================================================
-     Setup Event Listeners
-     ========================================================== */
-  function setupEventListeners() {
+  function onDayCardClick(mealSlot,recipeId){
+    // Find the recipe
+    const all=getAllRecipes();
+    const recipe=all.find(r=>r.id===recipeId);
+    if(!recipe)return;
+    // Show as a 4th card in current meals section or just show takeout
+    UIModule.renderTakeout(recipe);
+    document.getElementById('takeout-section')?.scrollIntoView({behavior:'smooth'});
+  }
+
+  /* ── Browse ── */
+  const PS=30;let bState={query:'',tag:'',page:0,all:[]};
+  function openBrowse(){bState={query:'',tag:'',page:0,all:[]};UIModule.showBrowse();doBrowse();renderBrowseTags()}
+  function closeBrowse(){UIModule.hideBrowse()}
+  function doBrowse(){
+    let all=getAllRecipes();
+    const q=bState.query.toLowerCase();
+    if(q)all=all.filter(r=>r.name.toLowerCase().includes(q)||r.description.toLowerCase().includes(q)||r.ingredients.some(i=>i.toLowerCase().includes(q)));
+    if(bState.tag)all=all.filter(r=>r.tags.includes(bState.tag));
+    bState.all=all;bState.page=0;renderBrowsePage();
+  }
+  function renderBrowsePage(){
+    const items=bState.all.slice(0,(bState.page+1)*PS);
+    UIModule.renderBrowseList({items,total:bState.all.length,hasMore:items.length<bState.all.length});
+  }
+  function loadMore(){bState.page++;renderBrowsePage()}
+  function renderBrowseTags(){
+    const c=$('browse-tags');if(!c)return;
+    const tags=['stir_fry','soup','noodle','cold_dish','stew','rice','hotpot','quick_easy','spicy','vegetarian'];
+    const tl={stir_fry:'小炒',soup:'汤羹',noodle:'面食',cold_dish:'凉拌',stew:'炖菜',rice:'米饭',hotpot:'火锅',quick_easy:'快手',spicy:'辣',vegetarian:'素食'};
+    c.innerHTML=tags.map(t=>'<button class="browse-tag-chip'+(bState.tag===t?' active':'')+'" data-tag="'+t+'">'+(tl[t]||t)+'</button>').join('');
+  }
+  function onBrowseTag(t){bState.tag=bState.tag===t?'':t;doBrowse();renderBrowseTags()}
+  function onBrowseItem(id){
+    const all=getAllRecipes();const r=all.find(x=>x.id===id);if(!r)return;
+    const item=document.querySelector('[data-recipe-id="'+id+'"].browse-item');if(!item)return;
+    const ex=item.nextElementSibling;
+    if(ex&&ex.classList.contains('browse-detail'))ex.remove();
+    else{const d=document.createElement('div');d.className='browse-detail';d.innerHTML=UIModule.renderBrowseDetail(r);item.after(d);d.scrollIntoView({behavior:'smooth',block:'nearest'})}
+  }
+
+  /* ── Add ── */
+  function openAdd(){UIModule.showAdd()}
+  function closeAdd(){UIModule.hideAdd();UIModule.clearAdd()}
+  function submitAdd(e){
+    e.preventDefault();const r=UIModule.getAddData();
+    if(!r){UIModule.showError('请填写菜名、食材和做法');setTimeout(()=>UIModule.hideError(),2000);return}
+    saveCustom(r);UIModule.clearAdd();UIModule.hideAdd();
+  }
+
+  /* ── Events ── */
+  function setupEvents(){
     // Refresh
-    const btnRefresh=document.getElementById('btn-refresh');
-    if(btnRefresh) btnRefresh.addEventListener('click',onRefreshClick);
+    $('btn-refresh')?.addEventListener('click',()=>{WeatherModule.incrementRefreshCount();refresh()});
+    $('btn-refresh2')?.addEventListener('click',()=>{WeatherModule.incrementRefreshCount();refresh()});
+
+    // City
+    $('top-city')?.addEventListener('click',openCityEdit);
+    $('city-edit-close')?.addEventListener('click',closeCityEdit);
+    $('city-edit-ok')?.addEventListener('click',submitCity);
+    $('city-edit-input')?.addEventListener('keydown',(e)=>{if(e.key==='Enter')submitCity()});
+
+    // Current recipe cards
+    $('current-recipes')?.addEventListener('click',(e)=>{
+      const card=e.target.closest('.recipe-card');if(!card)return;
+      const idx=parseInt(card.dataset.index);const rid=card.dataset.recipeId;
+      if(e.target.closest('.recipe-card-body')||e.target.closest('.recipe-card-tags'))return; // don't toggle when clicking body content
+      onCurrentCardClick(idx,rid);
+    });
+
+    // Day recipe cards
+    $('day-recipes')?.addEventListener('click',(e)=>{
+      const card=e.target.closest('.day-card');if(!card)return;
+      onDayCardClick(card.dataset.meal,card.dataset.recipeId);
+    });
 
     // Browse
-    const btnBrowse=document.getElementById('btn-browse');
-    if(btnBrowse) btnBrowse.addEventListener('click',openBrowse);
-    const btnCloseBrowse=document.getElementById('btn-close-browse');
-    if(btnCloseBrowse) btnCloseBrowse.addEventListener('click',closeBrowse);
+    $('btn-browse')?.addEventListener('click',openBrowse);
+    $('btn-browse2')?.addEventListener('click',openBrowse);
+    $('btn-close-browse')?.addEventListener('click',closeBrowse);
+    $('browse-search')?.addEventListener('input',(e)=>{bState.query=e.target.value;doBrowse()});
+    $('browse-tags')?.addEventListener('click',(e)=>{if(e.target.classList.contains('browse-tag-chip'))onBrowseTag(e.target.dataset.tag)});
+    $('browse-list')?.addEventListener('click',(e)=>{const item=e.target.closest('.browse-item');if(item)onBrowseItem(item.dataset.recipeId)});
+    $('btn-load-more')?.addEventListener('click',loadMore);
 
-    // Browse search
-    const browseSearch=document.getElementById('browse-search');
-    if(browseSearch) browseSearch.addEventListener('input',onBrowseSearch);
+    // Add
+    $('fab-add')?.addEventListener('click',openAdd);
+    $('btn-close-add')?.addEventListener('click',closeAdd);
+    $('add-form')?.addEventListener('submit',submitAdd);
 
-    // Browse tags (delegated)
-    const browseTags=document.getElementById('browse-tags');
-    if(browseTags) browseTags.addEventListener('click',(e)=>{ if(e.target.classList.contains('browse-tag-chip')) onBrowseTagClick(e.target.dataset.tag); });
+    // Copy
+    $('btn-copy-keywords')?.addEventListener('click',()=>{
+      if(currentMeals.length)UIModule.copyKeywords(currentMeals[0].recipe);
+    });
 
-    // Browse list items (delegated)
-    const browseList=document.getElementById('browse-list');
-    if(browseList) browseList.addEventListener('click',(e)=>{ const item=e.target.closest('.browse-item'); if(item) onBrowseItemClick(item.dataset.recipeId); });
-
-    // Load more
-    const btnLoadMore=document.getElementById('btn-load-more');
-    if(btnLoadMore) btnLoadMore.addEventListener('click',loadMoreBrowse);
-
-    // Relocate button
-    const btnRelocate = document.getElementById('btn-relocate');
-    if (btnRelocate) btnRelocate.addEventListener('click', onRelocate);
-
-    // Today's meal slots (delegated)
-    const mealsGrid=document.getElementById('today-meals-grid');
-    if(mealsGrid) mealsGrid.addEventListener('click',(e)=>{ const card=e.target.closest('.meal-slot-card'); if(card) onMealSlotClick(card.dataset.recipeId); });
-
-    // Add recipe
-    const fabAdd=document.getElementById('fab-add');
-    if(fabAdd) fabAdd.addEventListener('click',openAddModal);
-    const btnCloseAdd=document.getElementById('btn-close-add');
-    if(btnCloseAdd) btnCloseAdd.addEventListener('click',closeAddModal);
-    const addForm=document.getElementById('add-form');
-    if(addForm) addForm.addEventListener('submit',onSubmitRecipe);
-
-    // City form
-    const cityForm=document.getElementById('city-form');
-    if(cityForm) cityForm.addEventListener('submit',(e)=>{ e.preventDefault(); onCitySubmit(document.getElementById('city-input')?.value||''); });
-
-    // Copy keywords
-    const btnCopy=document.getElementById('btn-copy-keywords');
-    if(btnCopy) btnCopy.addEventListener('click',onCopyKeywords);
-
-    // Error banner retry
-    const errorBanner=document.getElementById('error-banner');
-    if(errorBanner) errorBanner.addEventListener('click',(e)=>{ if(e.target.id==='btn-retry') onRetryClick(); });
-
-    // Keyword chip taps
-    const takeoutKeywords=document.getElementById('takeout-keywords');
-    if(takeoutKeywords) takeoutKeywords.addEventListener('click',(e)=>{
-      if(e.target.classList.contains('keyword-chip')) {
-        const kw=e.target.dataset.keyword; UIModule.copySingleKeyword(kw);
-        const orig=e.target.textContent; e.target.textContent='✓ '+orig;
-        e.target.style.background='var(--amber-light)'; e.target.style.borderColor='var(--amber)'; e.target.style.color='var(--amber-deep)';
-        setTimeout(()=>{ e.target.textContent=orig; e.target.style.background=''; e.target.style.borderColor=''; e.target.style.color=''; },1500);
+    // Keyword chips
+    $('takeout-keywords')?.addEventListener('click',(e)=>{
+      if(e.target.classList.contains('keyword-chip')){
+        navigator.clipboard.writeText(e.target.dataset.keyword).catch(()=>{});
+        const o=e.target.textContent;e.target.textContent='✓ '+o;
+        e.target.style.background='var(--amber-light)';e.target.style.borderColor='var(--amber)';e.target.style.color='var(--amber-deep)';
+        setTimeout(()=>{e.target.textContent=o;e.target.style.background='';e.target.style.borderColor='';e.target.style.color=''},1500);
       }
     });
 
-    // Close overlays on backdrop tap
-    document.getElementById('browse-overlay')?.addEventListener('click',(e)=>{ if(e.target===e.currentTarget) closeBrowse(); });
-    document.getElementById('add-modal')?.addEventListener('click',(e)=>{ if(e.target===e.currentTarget) closeAddModal(); });
+    // Error retry
+    $('error-banner')?.addEventListener('click',(e)=>{if(e.target.id==='btn-retry')refresh()});
 
-    setupPullToRefresh();
+    // Close overlays on backdrop
+    $('browse-overlay')?.addEventListener('click',(e)=>{if(e.target===e.currentTarget)closeBrowse()});
+    $('add-modal')?.addEventListener('click',(e)=>{if(e.target===e.currentTarget)closeAdd()});
   }
 
-  /* ==========================================================
-     Init
-     ========================================================== */
-  function init() {
-    window.addEventListener('online',()=>UIModule.setOfflineBanner(false));
-    window.addEventListener('offline',()=>UIModule.setOfflineBanner(true));
-    if(!navigator.onLine) UIModule.setOfflineBanner(true);
-
-    // Render IMMEDIATELY — zero async, zero API
-    const cached = getCachedToday();
-    if (cached && isCacheFresh(cached)) {
-      renderFromCache(cached);
-    } else {
-      renderFallback();
+  /* ── Init ── */
+  async function init(){
+    const cached=getCachedToday();
+    if(cached&&isCacheFresh(cached)){
+      currentContext=cached.context;
+      currentMeals=cached.currentMeals||[];
+      dayRecs=cached.dayRecs||{};
+      UIModule.renderTopBar(cached.context);
+      UIModule.renderMealHeader(cached.context.mealTime);
+      UIModule.renderCurrentMeals(currentMeals,0);
+      UIModule.renderDayRecipes(dayRecs);
+      if(currentMeals.length)UIModule.renderTakeout(currentMeals[0].recipe);
+    }else{
+      // Default render immediately, then refresh
+      const fb={temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isDay:true,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
+      render(fb,[]);
     }
-
-    setupEventListeners();
-
-    // Background: try location update after page is fully rendered (non-blocking)
-    setTimeout(() => {
-      refreshRecommendations({silent:true}).catch(()=>{});
-      checkPermissionInBackground();
-    }, 2000);
+    setupEvents();
+    // Background refresh with real location
+    setTimeout(()=>refresh({}).catch(()=>{}),100);
   }
 
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
-
-  return { refreshRecommendations, getRecentRecommendations, getCachedToday, getCustomRecipes, saveCustomRecipe };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+  return{refresh,getAllRecipes};
 })();

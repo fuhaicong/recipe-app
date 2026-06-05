@@ -1,438 +1,159 @@
 /* ============================================================
-   ui.js — DOM Rendering Module (Culinary Atelier Edition)
+   ui.js — DOM Rendering v15
    ============================================================ */
-
 const UIModule = (() => {
-  /* ==========================================================
-     Helpers
-     ========================================================== */
+  function $(id){return document.getElementById(id)}
+  function setText(id,t){const e=$(id);if(e)e.textContent=t}
+  function setHTML(id,h){const e=$(id);if(e)e.innerHTML=h}
+  function show(id){const e=$(id);if(e)e.hidden=false}
+  function hide(id){const e=$(id);if(e)e.hidden=true}
+  function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
-  function $(id) { return document.getElementById(id); }
-
-  function setText(id, text) {
-    const el = $(id);
-    if (el) el.textContent = text;
+  /* ── Weather Icons ── */
+  function weatherIcon(code,isDay){
+    const m={0:isDay?'icon-sun':'icon-sun',1:'icon-sun',2:'icon-sun',3:'icon-cloud',45:'icon-mist',48:'icon-mist',51:'icon-rain',53:'icon-rain',55:'icon-rain',61:'icon-rain',63:'icon-rain',65:'icon-rain',71:'icon-snow',73:'icon-snow',75:'icon-snow',80:'icon-rain',81:'icon-rain',82:'icon-storm',85:'icon-snow',86:'icon-snow',95:'icon-storm',99:'icon-storm'};
+    return m[code]||'icon-sun';
   }
 
-  function setHTML(id, html) {
-    const el = $(id);
-    if (el) el.innerHTML = html;
+  /* ── Render Top Bar ── */
+  function renderTopBar(ctx){
+    setHTML('top-weather-icon','<svg width="28" height="28"><use href="#'+weatherIcon(ctx.weatherCode,ctx.isDay)+'"/></svg>');
+    setText('top-temp',ctx.temperature+'°');
+    setText('top-weather-desc',{clear:'晴',overcast:'阴',rainy:'雨',snowy:'雪',humid:'雾',extreme:'恶劣'}[ctx.weatherTag]||'多云');
+    setText('top-city-name',ctx.cityName||'北京');
   }
 
-  function show(id) { const el = $(id); if (el) el.hidden = false; }
-  function hide(id) { const el = $(id); if (el) el.hidden = true; }
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+  /* ── Render Meal Header ── */
+  function renderMealHeader(mealTime){
+    const map={breakfast:['🌅','现在是早餐时间','为你推荐以下三道菜'],lunch:['🌤️','现在是午餐时间','为你推荐以下三道菜'],snack:['🍵','现在是下午茶时间','来点小食吧'],dinner:['🌙','现在是晚餐时间','为你推荐以下三道菜'],late_night:['🌃','现在是夜宵时间','深夜暖胃推荐']};
+    const[emoji,title,sub]=map[mealTime]||map.lunch;
+    setText('meal-header-icon',emoji);
+    setText('meal-header-title',title);
+    setText('meal-header-sub',sub);
   }
 
-  /* ==========================================================
-     Weather SVG Icon Mapping
-     ========================================================== */
-
-  /**
-   * Return the SVG icon href for a WMO weather code + day/night.
-   * Uses <use href="#icon-xxx"/> references from the inline SVG defs.
-   */
-  function getWeatherIconHTML(code, isDay) {
-    // Nighttime: use moon for clear/partly-cloudy
-    if (!isDay && code <= 1) {
-      return '<svg width="40" height="40" viewBox="0 0 32 32"><use href="#icon-moon"/></svg>';
-    }
-
-    const map = {
-      0: 'icon-sun',                    // Clear sky
-      1: 'icon-cloud-sun',              // Mainly clear
-      2: 'icon-cloud-sun',              // Partly cloudy
-      3: 'icon-cloud',                  // Overcast
-      45: 'icon-mist', 48: 'icon-mist', // Fog
-      51: 'icon-rain', 53: 'icon-rain', 55: 'icon-rain', 57: 'icon-rain',  // Drizzle
-      61: 'icon-rain', 63: 'icon-rain', 65: 'icon-rain', 67: 'icon-rain',  // Rain
-      71: 'icon-snow', 73: 'icon-snow', 75: 'icon-snow', 77: 'icon-snow',  // Snow
-      80: 'icon-rain', 81: 'icon-rain', 82: 'icon-storm',                   // Rain showers
-      85: 'icon-snow', 86: 'icon-snow',                                     // Snow showers
-      95: 'icon-storm', 96: 'icon-storm', 99: 'icon-storm',                 // Thunderstorm
-    };
-
-    const iconId = map[code] || 'icon-cloud';
-    return '<svg width="40" height="40" viewBox="0 0 32 32"><use href="#' + iconId + '"/></svg>';
+  /* ── Render 3 Current Meal Recipe Cards ── */
+  function renderCurrentMeals(recipes, activeIndex){
+    const container=$('current-recipes');
+    if(!container)return;
+    container.innerHTML=recipes.map((r,i)=>{
+      const active=i===activeIndex?' recipe-card--active':'';
+      const tags=(r.tags||[]).filter(t=>!t.includes('_weather')).slice(0,6).map(t=>'<span class="tag">'+esc(t)+'</span>').join('');
+      return '<div class="recipe-card'+active+'" data-index="'+i+'" data-recipe-id="'+r.id+'">'+
+        '<div class="recipe-card-header">'+
+          '<span class="recipe-card-emoji">'+r.emoji+'</span>'+
+          '<div class="recipe-card-info">'+
+            '<div class="recipe-card-name">'+esc(r.name.replace(r.emoji+' ',''))+'</div>'+
+            '<div class="recipe-card-desc">'+esc(r.description)+'</div>'+
+            '<div class="recipe-card-meta">⏱ '+r.prepTimeMin+'分钟 · '+(r.difficulty==='easy'?'简单':r.difficulty==='medium'?'中等':'挑战')+'</div>'+
+          '</div>'+
+          '<span class="recipe-card-score">'+r.score+'%</span>'+
+        '</div>'+
+        '<div class="recipe-card-body">'+
+          '<h4>🥬 食材</h4><ul>'+r.ingredients.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'+
+          '<h4>📝 做法</h4><ol>'+r.steps.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol>'+
+        '</div>'+
+        (tags?'<div class="recipe-card-tags">'+tags+'</div>':'')+
+      '</div>';
+    }).join('');
   }
 
-  /** Human-readable weather description */
-  function getWeatherDesc(tag) {
-    const map = {
-      clear: '晴', overcast: '阴', rainy: '雨', snowy: '雪',
-      humid: '雾', extreme: '极端天气',
-    };
-    return map[tag] || '多云';
+  /* ── Render Day Recipes (3 cards) ── */
+  function renderDayRecipes(dayRecs){
+    const container=$('day-recipes');
+    if(!container)return;
+    const slots=[
+      {key:'breakfast',time:'早餐',emoji:'🌅'},
+      {key:'lunch',time:'午餐',emoji:'🌤️'},
+      {key:'dinner',time:'晚餐',emoji:'🌙'},
+      {key:'late_night',time:'夜宵',emoji:'🌃'},
+    ];
+    container.innerHTML=slots.map(s=>{
+      const m=dayRecs[s.key];
+      if(!m)return'';
+      return '<div class="day-card" data-meal="'+s.key+'" data-recipe-id="'+m.recipe.id+'">'+
+        '<div class="day-card-time">'+s.time+'</div>'+
+        '<span class="day-card-emoji">'+m.recipe.emoji+'</span>'+
+        '<div class="day-card-name">'+esc(m.recipe.name.replace(m.recipe.emoji+' ',''))+'</div>'+
+      '</div>';
+    }).join('');
   }
 
-  /** Temperature category label */
-  function getTempLabel(category) {
-    const map = { hot: '炎热', warm: '温暖', cool: '凉爽', cold: '寒冷' };
-    return map[category] || '';
+  /* ── Display Tags ── */
+  function getDisplayTags(tags){
+    const m={'cold_dish':'凉拌','stir_fry':'小炒','soup':'汤羹','noodle':'面食','rice':'米饭','hotpot':'火锅','stew':'炖菜','salad':'沙拉','dim_sum':'点心','street_food':'街头美食','home_style':'家常','healthy':'健康','comfort_food':'暖心','quick_easy':'快手','spring':'春','summer':'夏','autumn':'秋','winter':'冬','spicy':'辣','mild':'清淡','sour':'酸','sweet':'甜','savory':'咸香','light':'轻食','hearty':'硬菜','vegetarian':'素食','meat':'荤','seafood':'海鲜','sichuan':'川','guangdong':'粤','hunan':'湘','shandong':'鲁','northeast':'东北','northwest':'西北','southwest':'西南','central':'华中','beijing':'京','shanghai':'沪'};
+    return tags.filter(t=>!['hot_weather','warm_weather','cool_weather','cold_weather'].includes(t)).map(t=>m[t]||t).slice(0,8);
   }
 
-  /** Season label */
-  function getSeasonLabel(season) {
-    const map = { spring: '春季', summer: '夏季', autumn: '秋季', winter: '冬季' };
-    return map[season] || '';
-  }
-
-  /** Meal time label */
-  function getMealLabel(mealTime) {
-    const map = {
-      breakfast: '早餐时间', lunch: '午餐时间', snack: '下午茶',
-      dinner: '晚餐时间', late_night: '夜宵时间',
-    };
-    return map[mealTime] || '';
-  }
-
-  /** Difficulty label */
-  function getDifficultyLabel(d) {
-    const map = { easy: '简单', medium: '中等', hard: '挑战' };
-    return map[d] || d;
-  }
-
-  /** Filter tags for display */
-  function getDisplayTags(tags) {
-    const internalPrefixes = ['hot_weather', 'warm_weather', 'cool_weather', 'cold_weather'];
-    const displayMap = {
-      'cold_dish': '凉拌', 'stir_fry': '小炒', 'soup': '汤羹', 'noodle': '面食',
-      'rice': '米饭', 'hotpot': '火锅', 'stew': '炖菜', 'salad': '沙拉',
-      'dim_sum': '点心', 'street_food': '街头美食', 'home_style': '家常',
-      'healthy': '健康', 'comfort_food': '暖心', 'quick_easy': '快手',
-      'spring': '春', 'summer': '夏', 'autumn': '秋', 'winter': '冬',
-      'spicy': '辣', 'mild': '清淡', 'sour': '酸', 'sweet': '甜', 'savory': '咸香',
-      'light': '轻食', 'hearty': '硬菜', 'vegetarian': '素食', 'meat': '荤', 'seafood': '海鲜',
-      'sichuan': '川', 'guangdong': '粤', 'hunan': '湘', 'shandong': '鲁',
-      'northeast': '东北', 'northwest': '西北', 'southwest': '西南', 'central': '华中',
-      'beijing': '京', 'shanghai': '沪',
-    };
-    return tags
-      .filter(t => !internalPrefixes.includes(t))
-      .map(t => displayMap[t] || t)
-      .slice(0, 8);
-  }
-
-  /* ==========================================================
-     Render Functions
-     ========================================================== */
-
-  /** Render the weather module */
-  function renderWeatherBar(context) {
-    setText('city-name', context.cityName || '未知城市');
-    setText('temperature', context.temperature);
-    setText('weather-desc', getWeatherDesc(context.weatherTag));
-    setText('season-tag', getSeasonLabel(context.season));
-    setText('meal-period', getMealLabel(context.mealTime));
-    setText('temp-tag', '体感 ' + context.feelsLike + '°C · ' + getTempLabel(context.tempCategory));
-
-    // Weather SVG icon
-    setHTML('weather-icon-container', getWeatherIconHTML(context.weatherCode, context.isDay));
-
-    // Temperature mood theme class
-    document.documentElement.className = 'theme-' + context.tempCategory;
-  }
-
-  /** Render primary recipe card */
-  function renderPrimaryCard(recipe, score) {
-    hide('loading-skeleton');
-    show('primary-card');
-
-    // Name with emoji (food emoji is data, not icon library)
-    setText('primary-name', recipe.emoji + ' ' + recipe.name);
-    setText('primary-desc', recipe.description);
-    setText('primary-match', '匹配 ' + score + '%');
-    setText('primary-time', recipe.prepTimeMin + ' 分钟');
-    setText('primary-difficulty', getDifficultyLabel(recipe.difficulty));
-
-    // Ingredients
-    setHTML('primary-ingredients',
-      recipe.ingredients.map(i => '<li>' + escapeHtml(i) + '</li>').join(''));
-
-    // Steps
-    setHTML('primary-steps',
-      recipe.steps.map((s, idx) =>
-        '<li value="' + (idx + 1) + '">' + escapeHtml(s) + '</li>'
-      ).join(''));
-
-    // Collapse details when switching
-    $('primary-details').open = false;
-
-    // Tags
-    const displayTags = getDisplayTags(recipe.tags);
-    setHTML('primary-tags',
-      displayTags.map(t => '<span class="tag">' + escapeHtml(t) + '</span>').join(''));
-
-    // Card entrance animation
-    const card = $('primary-card');
-    card.style.opacity = '0';
-    card.style.transform = 'translateY(24px)';
-    requestAnimationFrame(() => {
-      card.style.transition = 'opacity 500ms cubic-bezier(0.16,1,0.3,1), transform 500ms cubic-bezier(0.16,1,0.3,1)';
-      card.style.opacity = '1';
-      card.style.transform = 'translateY(0)';
-    });
-  }
-
-  /** Render alternative cards */
-  function renderAlternatives(alternatives) {
-    if (!alternatives || alternatives.length === 0) {
-      hide('alternatives-section');
-      return;
-    }
-
-    setHTML('alternative-cards', alternatives.map(({ recipe, score }) =>
-      '<article class="recipe-card recipe-card--mini" role="article"' +
-      ' data-recipe-id="' + escapeHtml(recipe.id) + '"' +
-      ' aria-label="' + escapeHtml(recipe.name) + '">' +
-      '<h4 class="mini-name">' + recipe.emoji + ' ' + escapeHtml(recipe.name) + '</h4>' +
-      '<p class="mini-desc">' + escapeHtml(recipe.description) + '</p>' +
-      '<span class="mini-score">' + score + '%</span>' +
-      '</article>'
-    ).join(''));
-    show('alternatives-section');
-  }
-
-  /** Render takeout keyword chips */
-  function renderTakeoutSection(primaryRecipe) {
-    const keywords = primaryRecipe.takeoutKeywords;
-    setHTML('takeout-keywords', keywords.map(k =>
-      '<span class="keyword-chip" data-keyword="' + escapeHtml(k) + '">' + escapeHtml(k) + '</span>'
-    ).join(''));
+  /* ── Takeout ── */
+  function renderTakeout(recipe){
+    const c=$('takeout-keywords');if(!c)return;
+    c.innerHTML=recipe.takeoutKeywords.map(k=>'<span class="keyword-chip" data-keyword="'+esc(k)+'">'+esc(k)+'</span>').join('');
     show('takeout-section');
   }
 
-  /* ==========================================================
-     Today's 3-Meal Grid
-     ========================================================== */
-  const MEAL_SLOTS = [
-    { key: 'breakfast', time: '早餐', emoji: '🌅' },
-    { key: 'lunch', time: '午餐', emoji: '🌤️' },
-    { key: 'dinner', time: '晚餐', emoji: '🌙' },
-    { key: 'late_night', time: '夜宵', emoji: '🌃' },
-  ];
-
-  function renderTodayMeals(mealRecs) {
-    hide('loading-skeleton');
-    const grid = $('today-meals-grid');
-    if (!grid) return;
-    grid.innerHTML = MEAL_SLOTS.map(slot => {
-      const m = mealRecs[slot.key];
-      if (!m) return '';
-      return '<article class="meal-slot-card" data-meal="'+slot.key+'" data-recipe-id="'+m.recipe.id+'">' +
-        '<div class="meal-slot-time">'+slot.time+'</div>' +
-        '<span class="meal-slot-emoji">'+m.recipe.emoji+'</span>' +
-        '<div class="meal-slot-name">'+escapeHtml(m.recipe.name.replace(m.recipe.emoji+' ',''))+'</div>' +
-        '<span class="meal-slot-score">'+m.score+'%</span>' +
-        '</article>';
-    }).join('');
-    show('today-meals');
-  }
-
-  /* ==========================================================
-     Browse Overlay
-     ========================================================== */
-  function showBrowseOverlay() { show('browse-overlay'); document.body.style.overflow='hidden'; }
-  function hideBrowseOverlay() { hide('browse-overlay'); document.body.style.overflow=''; }
-
-  function renderBrowseList(recipes, query, activeTag) {
-    const list = $('browse-list');
-    const empty = $('browse-empty');
-    const loadMore = $('browse-load-more');
-    const count = $('browse-count');
-    if (count) count.textContent = '· '+recipes.total+' 道';
-
-    if (recipes.items.length === 0) {
-      list.innerHTML = '';
-      show('browse-empty');
-      hide('browse-load-more');
-      hide('browse-list');
-      return;
-    }
+  /* ── Browse ── */
+  function showBrowse(){show('browse-overlay');document.body.style.overflow='hidden'}
+  function hideBrowse(){hide('browse-overlay');document.body.style.overflow=''}
+  function renderBrowseList(recipes){
+    const list=$('browse-list'),empty=$('browse-empty'),loadMore=$('browse-load-more'),count=$('browse-count');
+    if(count)count.textContent='· '+recipes.total+' 道';
+    if(!recipes.items.length){list.innerHTML='';show('browse-empty');hide('browse-load-more');return}
     hide('browse-empty');
-    show('browse-list');
-
-    list.innerHTML = recipes.items.map(r => {
-      const displayTags = getDisplayTags(r.tags).slice(0,3);
-      const isCustom = r.id && r.id.startsWith('u');
-      return '<div class="browse-item" data-recipe-id="'+r.id+'">' +
-        '<span class="browse-item-emoji">'+r.emoji+'</span>' +
-        '<div class="browse-item-info">' +
-          '<div class="browse-item-name">'+escapeHtml(r.name.replace(r.emoji+' ',''))+'</div>' +
-          '<div class="browse-item-desc">'+escapeHtml(r.description)+'</div>' +
-          '<div class="browse-item-meta">' +
-            (isCustom ? '<span class="browse-item-tag custom-tag">我的</span>' : '') +
-            '<span class="browse-item-tag">⏱ '+r.prepTimeMin+'min</span>' +
-            displayTags.map(t => '<span class="browse-item-tag">'+escapeHtml(t)+'</span>').join('') +
-          '</div>' +
-        '</div>' +
-      '</div>';
+    list.innerHTML=recipes.items.map(r=>{
+      const dt=getDisplayTags(r.tags).slice(0,3);
+      const isCustom=r.id&&r.id.startsWith('u');
+      return '<div class="browse-item" data-recipe-id="'+r.id+'">'+
+        '<span class="browse-item-emoji">'+r.emoji+'</span>'+
+        '<div class="browse-item-info">'+
+          '<div class="browse-item-name">'+esc(r.name.replace(r.emoji+' ',''))+'</div>'+
+          '<div class="browse-item-desc">'+esc(r.description)+'</div>'+
+          '<div class="browse-item-meta">'+
+            (isCustom?'<span class="browse-item-tag custom-tag">我的</span>':'')+
+            '<span class="browse-item-tag">⏱ '+r.prepTimeMin+'min</span>'+
+            dt.map(t=>'<span class="browse-item-tag">'+esc(t)+'</span>').join('')+
+          '</div>'+
+        '</div></div>';
     }).join('');
-
-    if (recipes.hasMore) { show('browse-load-more'); } else { hide('browse-load-more'); }
+    if(recipes.hasMore)show('browse-load-more');else hide('browse-load-more');
+  }
+  function renderBrowseDetail(recipe){
+    return '<div class="browse-detail"><h4>🥬 食材</h4><ul>'+recipe.ingredients.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul><h4 style="margin-top:10px">📝 做法</h4><ol>'+recipe.steps.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol></div>';
   }
 
-  function renderBrowseDetail(recipe) {
-    return '<div class="browse-detail">' +
-      '<h4>🥬 食材</h4><ul>'+recipe.ingredients.map(i=>'<li>'+escapeHtml(i)+'</li>').join('')+'</ul>' +
-      '<h4 style="margin-top:12px">📝 做法</h4><ol>'+recipe.steps.map(s=>'<li>'+escapeHtml(s)+'</li>').join('')+'</ol>' +
-      '</div>';
+  /* ── Add Modal ── */
+  function showAdd(){show('add-modal');document.body.style.overflow='hidden'}
+  function hideAdd(){hide('add-modal');document.body.style.overflow=''}
+  function getAddData(){
+    const n=($('add-name').value||'').trim(),d=($('add-desc').value||'').trim();
+    const ir=($('add-ingredients').value||'').trim(),sr=($('add-steps').value||'').trim();
+    const t=parseInt($('add-time').value)||20,df=$('add-difficulty').value;
+    const tr=($('add-takeout').value||'').trim();
+    if(!n||!ir||!sr)return null;
+    return{id:'u'+Date.now(),name:'🍽️ '+n,emoji:'🍽️',description:d||'我的私房菜',
+      ingredients:ir.split('\n').map(s=>s.trim()).filter(Boolean),
+      steps:sr.split('\n').map(s=>s.trim()).filter(Boolean),
+      prepTimeMin:Math.max(1,Math.min(300,t)),difficulty:df,
+      tags:['home_style','universal','lunch','dinner'],
+      takeoutKeywords:tr?tr.split(/[,，]/).map(s=>s.trim()).filter(Boolean):[n]};
   }
+  function clearAdd(){$('add-name').value='';$('add-desc').value='';$('add-ingredients').value='';$('add-steps').value='';$('add-time').value='20';$('add-difficulty').value='medium';$('add-takeout').value=''}
+  function showError(msg,retry){const b=$('error-banner');b.innerHTML=retry?esc(msg)+' <button class="btn-retry" id="btn-retry">重试</button>':esc(msg);show('error-banner')}
+  function hideError(){hide('error-banner')}
 
-  /* ==========================================================
-     Add Recipe Modal
-     ========================================================== */
-  function showAddModal() { show('add-modal'); document.body.style.overflow='hidden'; }
-  function hideAddModal() { hide('add-modal'); document.body.style.overflow=''; }
-
-  function getAddFormData() {
-    const name = ($('add-name').value||'').trim();
-    const desc = ($('add-desc').value||'').trim();
-    const ingRaw = ($('add-ingredients').value||'').trim();
-    const stepsRaw = ($('add-steps').value||'').trim();
-    const time = parseInt($('add-time').value)||20;
-    const diff = $('add-difficulty').value;
-    const takeoutRaw = ($('add-takeout').value||'').trim();
-
-    if (!name || !ingRaw || !stepsRaw) return null;
-
-    const ingredients = ingRaw.split('\n').map(s=>s.trim()).filter(Boolean);
-    const steps = stepsRaw.split('\n').map(s=>s.trim()).filter(Boolean);
-    const takeoutKeywords = takeoutRaw ? takeoutRaw.split(/[,，]/).map(s=>s.trim()).filter(Boolean) : [name];
-
-    return {
-      id: 'u'+Date.now(),
-      name: '🍽️ '+name, emoji: '🍽️',
-      description: desc || '我的私房菜',
-      ingredients, steps,
-      prepTimeMin: Math.max(1,Math.min(300,time)),
-      difficulty: diff,
-      tags: ['home_style','universal','warm_weather','cool_weather','lunch','dinner'],
-      takeoutKeywords: takeoutKeywords.length>0 ? takeoutKeywords : [name],
-    };
-  }
-
-  function clearAddForm() {
-    $('add-name').value = '';
-    $('add-desc').value = '';
-    $('add-ingredients').value = '';
-    $('add-steps').value = '';
-    $('add-time').value = '20';
-    $('add-difficulty').value = 'medium';
-    $('add-takeout').value = '';
-  }
-
-  /* ==========================================================
-     State Transitions
-     ========================================================== */
-
-  function showLoading() {
-    show('loading-skeleton');
-    hide('primary-card');
-    hide('alternatives-section');
-    hide('takeout-section');
-  }
-
-  function showLocationPrompt(errorType) {
-    show('location-prompt');
-    const msgMap = {
-      'GEOLOCATION_DENIED': '位置权限被拒绝',
-      'GEOLOCATION_UNAVAILABLE': '无法获取位置信息',
-      'GEOLOCATION_TIMEOUT': '定位请求超时',
-      'GEOLOCATION_NOT_SUPPORTED': '您的浏览器不支持定位',
-    };
-    setText('location-error-msg', msgMap[errorType] || '');
-  }
-
-  function hideLocationPrompt() {
-    setText('location-error-msg', '');
-    $('city-input').value = '';
-  }
-
-  function showError(message, isRetryable) {
-    const banner = $('error-banner');
-    if (isRetryable) {
-      banner.innerHTML = escapeHtml(message) +
-        ' <button class="btn-retry" id="btn-retry">重试</button>';
-    } else {
-      banner.textContent = message;
-    }
-    show('error-banner');
-  }
-
-  function hideError() {
-    hide('error-banner');
-  }
-
-  function setOfflineBanner(visible) {
-    if (visible) show('offline-banner');
-    else hide('offline-banner');
-  }
-
-  function setRefreshEnabled(enabled) {
-    const btn = $('btn-refresh');
-    btn.disabled = !enabled;
-    if (enabled) {
-      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 18 18"><use href="#icon-refresh"/></svg> 换一个';
-    } else {
-      btn.innerHTML = '<span class="ptr-spinner"></span> 加载中...';
-    }
-  }
-
-  /* ==========================================================
-     Copy Helpers
-     ========================================================== */
-
-  function copyTakeoutKeywords(primaryRecipe) {
-    const text = primaryRecipe.takeoutKeywords.join(' ');
-    navigator.clipboard.writeText(text).then(() => {
-      const btn = $('btn-copy-keywords');
-      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" style="display:none"><use href="#icon-copy"/></svg> 已复制！去外卖APP搜索吧';
-      btn.style.color = 'var(--sage-deep)';
-      btn.style.borderColor = 'var(--sage)';
-      setTimeout(() => {
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16"><use href="#icon-copy"/></svg> 复制关键词';
-        btn.style.color = '';
-        btn.style.borderColor = '';
-      }, 2500);
-    }).catch(() => {
-      // Fallback: select text
-      const container = $('takeout-keywords');
-      const range = document.createRange();
-      range.selectNodeContents(container);
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-      const btn = $('btn-copy-keywords');
-      btn.textContent = '已选中，请手动复制';
-      setTimeout(() => {
-        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16"><use href="#icon-copy"/></svg> 复制关键词';
-      }, 2000);
+  function copyKeywords(recipe){
+    const t=recipe.takeoutKeywords.join(' ');
+    navigator.clipboard.writeText(t).then(()=>{
+      const b=$('btn-copy-keywords');b.textContent='✅ 已复制';setTimeout(()=>{b.innerHTML='<svg width="14" height="14"><use href="#icon-copy"/></svg> 复制关键词'},2000);
+    }).catch(()=>{
+      const c=$('takeout-keywords'),r=document.createRange();r.selectNodeContents(c);
+      const s=window.getSelection();s.removeAllRanges();s.addRange(r);
     });
   }
 
-  function copySingleKeyword(keyword) {
-    navigator.clipboard.writeText(keyword).then(() => {}).catch(() => {});
-  }
-
-  /* ==========================================================
-     Public API
-     ========================================================== */
-
-  return {
-    $, setText, setHTML, show, hide, escapeHtml,
-    getWeatherIconHTML, getWeatherDesc, getSeasonLabel, getMealLabel,
-    getDifficultyLabel, getTempLabel,
-    renderWeatherBar, renderPrimaryCard, renderAlternatives, renderTakeoutSection,
-    showLoading, showLocationPrompt, hideLocationPrompt,
-    showError, hideError, setOfflineBanner, setRefreshEnabled,
-    copyTakeoutKeywords, copySingleKeyword,
-    renderTodayMeals, showBrowseOverlay, hideBrowseOverlay, renderBrowseList,
-    renderBrowseDetail, showAddModal, hideAddModal, getAddFormData, clearAddForm,
+  return{$('$'),setText,setHTML,show,hide,esc,
+    renderTopBar,renderMealHeader,renderCurrentMeals,renderDayRecipes,renderTakeout,
+    showBrowse,hideBrowse,renderBrowseList,renderBrowseDetail,
+    showAdd,hideAdd,getAddData,clearAdd,showError,hideError,copyKeywords,getDisplayTags
   };
 })();
