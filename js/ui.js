@@ -124,7 +124,7 @@ const UIModule = (() => {
 
   /** Render the weather module */
   function renderWeatherBar(context) {
-    setText('city-name', context.cityName || '未知城市');
+    setHTML('city-name', '<svg width="14" height="14"><use href="#icon-pin"/></svg> ' + (context.cityName || '未知城市'));
     setText('temperature', context.temperature);
     setText('weather-desc', getWeatherDesc(context.weatherTag));
     setText('season-tag', getSeasonLabel(context.season));

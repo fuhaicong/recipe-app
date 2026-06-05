@@ -68,6 +68,8 @@ const App = (() => {
     const fb = {temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isRainy:false,isSnowy:false,isExtreme:false,isDay:true,humidity:50,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
     try {
       UIModule.hide('loading-skeleton');
+      var cityBtn = document.getElementById('city-name');
+      if (cityBtn) cityBtn.innerHTML = '<svg width="14" height="14"><use href=\"#icon-pin\"/></svg> 北京';
       const mealRecs = getMealRecommendations(fb, []);
       const p = mealRecs['lunch']?.recipe || mealRecs['dinner']?.recipe;
       UIModule.renderWeatherBar(fb); UIModule.renderTodayMeals(mealRecs);
@@ -236,7 +238,7 @@ const App = (() => {
 
   function selectCity(city) {
     closeCityPicker();
-    document.getElementById('city-name').textContent = city;
+    document.getElementById('city-name').innerHTML = '<svg width="14" height="14"><use href="#icon-pin"/></svg> ' + city;
     // Trigger refresh with selected city
     refreshRecommendations({ silent: false, manualCity: city });
   }
