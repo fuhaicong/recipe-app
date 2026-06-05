@@ -71,9 +71,12 @@
     <section id="current-meal" hidden aria-label="当前时段推荐">
       <div id="current-meal-header" class="meal-header">
         <span id="meal-header-icon" class="meal-header-icon">🌤️</span>
-        <div>
+        <div style="flex:1">
           <div id="meal-header-title" class="meal-header-title">现在是午餐时间</div>
         </div>
+        <button id="btn-refresh-meal" class="btn-refresh-meal">
+          <svg width="15" height="15"><use href="#icon-refresh"/></svg> 换一批
+        </button>
       </div>
       <div id="cm-tab-bar" class="cm-tab-bar"></div>
       <div id="cm-detail" class="cm-detail"></div>
@@ -87,11 +90,8 @@
 
     <!-- Action Bar -->
     <div class="action-bar">
-      <button id="btn-browse" class="btn btn-secondary">
+      <button id="btn-browse" class="btn btn-secondary" style="flex:1">
         <svg width="15" height="15"><use href="#icon-book"/></svg> 浏览菜谱
-      </button>
-      <button id="btn-refresh" class="btn btn-primary" style="flex:1">
-        <svg width="16" height="16"><use href="#icon-refresh"/></svg> 换一批
       </button>
     </div>
 

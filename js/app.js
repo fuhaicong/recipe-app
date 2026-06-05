@@ -6,6 +6,7 @@ const App = (() => {
   const STORAGE_KEY = 'recipe_today';
   const HISTORY_KEY = 'recipe_history';
   const CUSTOM_KEY = 'recipe_custom';
+  let currentContext = null;
 
   /* ==========================================================
      LocalStorage Helpers
@@ -58,6 +59,7 @@ const App = (() => {
      ========================================================== */
   function renderFromCache(cached) {
     if (!cached) return;
+    currentContext = cached.context;
     UIModule.hide('loading-skeleton');
     UIModule.renderWeatherBar(cached.context);
     if (cached.currentRecs) UIModule.renderCurrentMeal(cached.context.mealTime, cached.currentRecs);
@@ -67,6 +69,7 @@ const App = (() => {
 
   function renderFallback() {
     const fb = {temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isRainy:false,isSnowy:false,isExtreme:false,isDay:true,humidity:50,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
+    currentContext = fb;
     try {
       UIModule.hide('loading-skeleton');
       var cityBtn = document.getElementById('city-name');
@@ -147,6 +150,7 @@ const App = (() => {
       const mealRecs = getMealRecommendations(context, recentIds);
 
       // Render
+      currentContext = context;
       UIModule.hide('loading-skeleton');
       UIModule.renderWeatherBar(context);
 
@@ -184,6 +188,20 @@ const App = (() => {
   function onRefreshClick() {
     WeatherModule.incrementRefreshCount();
     refreshRecommendations({ silent: false });
+  }
+
+  function onRefreshMealClick() {
+    if (!currentContext) return;
+    WeatherModule.incrementRefreshCount();
+    const recentIds = getRecentRecommendations();
+    const cRecs = getCurrentMealTop3(currentContext, recentIds);
+    UIModule.renderCurrentMeal(currentContext.mealTime, cRecs);
+    // Update cache
+    const cached = getCachedToday();
+    if (cached) {
+      cached.currentRecs = cRecs;
+      saveTodayCache(cached);
+    }
   }
   function onCitySubmit(city) {
     if (!city||!city.trim()) return;
@@ -491,6 +509,10 @@ const App = (() => {
     // Relocate button
     const btnRelocate = document.getElementById('btn-relocate');
     if (btnRelocate) btnRelocate.addEventListener('click', onRelocate);
+
+    // Meal refresh button
+    const btnRM = document.getElementById('btn-refresh-meal');
+    if (btnRM) btnRM.addEventListener('click', onRefreshMealClick);
 
     // Tab bar: switch active recipe
     const tabBar = document.getElementById('cm-tab-bar');
