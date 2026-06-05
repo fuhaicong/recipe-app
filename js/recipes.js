@@ -6421,6 +6421,8 @@ const RecipeModule = (() => {
       if (context.mealTime==='breakfast' && recipe.tags.includes('quick_easy')) score += 8;
     }
 
+    // Session-based variation: same session = same results, different session = different results
+    if (context.session) score += hashString(recipe.id + context.session) % 11;
     if (recentIds && recentIds.includes(recipe.id)) score -= 15;
     return Math.max(0, Math.min(100, score));
   }

@@ -192,14 +192,15 @@ window.App = (() => {
 
   function onRefreshMealClick() {
     if (!currentContext) {
-      // Fallback: use default context
       currentContext = {temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isDay:true,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
     }
-    WeatherModule.incrementRefreshCount();
-    const recentIds = getRecentRecommendations();
-    const cRecs = getCurrentMealTop3(currentContext, recentIds);
-    UIModule.renderCurrentMeal(currentContext.mealTime, cRecs);
-    const cached = getCachedToday();
+    var count = WeatherModule.incrementRefreshCount();
+    // Vary session so scoring changes each click
+    var ctx = Object.assign({}, currentContext, {session: count});
+    var recentIds = getRecentRecommendations();
+    var cRecs = getCurrentMealTop3(ctx, recentIds);
+    UIModule.renderCurrentMeal(ctx.mealTime, cRecs);
+    var cached = getCachedToday();
     if (cached) { cached.currentRecs = cRecs; saveTodayCache(cached); }
   }
   function onCitySubmit(city) {
