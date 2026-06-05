@@ -175,19 +175,89 @@ const App = (() => {
     const cached = getCachedToday();
     if (cached&&cached.takeoutPrimary) UIModule.copyTakeoutKeywords(cached.takeoutPrimary);
   }
+  /* ==========================================================
+     City Picker
+     ========================================================== */
+  function openCityPicker() {
+    document.getElementById('city-picker-overlay').hidden = false;
+    document.body.style.overflow = 'hidden';
+    const searchInput = document.getElementById('city-picker-search');
+    searchInput.value = '';
+    searchInput.focus();
+    renderCityPickerProvinces();
+  }
+  function closeCityPicker() {
+    document.getElementById('city-picker-overlay').hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  function renderCityPickerProvinces() {
+    const list = document.getElementById('city-picker-list');
+    const provs = WeatherModule.getProvinceCities();
+    list.innerHTML = provs.map(p => {
+      const citiesHtml = p.c.map(c => '<button class="city-chip" data-city="'+c+'" data-prov="'+p.n+'">'+c+'</button>').join('');
+      return '<div class="city-province">' +
+        '<div class="city-province-header">'+p.n+'</div>' +
+        '<div class="city-province-body">'+citiesHtml+'</div>' +
+      '</div>';
+    }).join('');
+
+    // Toggle province open/close
+    list.querySelectorAll('.city-province-header').forEach(h => {
+      h.addEventListener('click', () => h.parentElement.classList.toggle('open'));
+    });
+
+    // Select city
+    list.querySelectorAll('.city-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const city = chip.dataset.city;
+        selectCity(city);
+      });
+    });
+  }
+
+  function renderCitySearchResults(query) {
+    const list = document.getElementById('city-picker-list');
+    const results = WeatherModule.searchCities(query);
+    if (results.length === 0) {
+      list.innerHTML = '<div class="city-picker-empty">未找到匹配城市</div>';
+      return;
+    }
+    list.innerHTML = results.map(r =>
+      '<div class="city-search-result" data-city="'+r.city+'">' +
+        '<span>'+r.city+'</span>' +
+        '<span class="province-hint">'+r.province+'</span>' +
+      '</div>'
+    ).join('');
+    list.querySelectorAll('.city-search-result').forEach(el => {
+      el.addEventListener('click', () => selectCity(el.dataset.city));
+    });
+  }
+
+  function selectCity(city) {
+    closeCityPicker();
+    document.getElementById('city-name').textContent = city;
+    // Trigger refresh with selected city
+    refreshRecommendations({ silent: false, manualCity: city });
+  }
+
+  function onCityPickerSearch(e) {
+    const q = e.target.value.trim();
+    if (q) renderCitySearchResults(q);
+    else renderCityPickerProvinces();
+  }
+
   async function onRelocate() {
     const btn = document.getElementById('btn-relocate');
     const promptText = document.getElementById('location-prompt-text');
     if (btn) { btn.disabled = true; btn.textContent = '定位中...'; }
 
-    // Check permission state first
     let permDenied = false;
     try {
       const perm = await navigator.permissions.query({ name: 'geolocation' });
       permDenied = (perm.state === 'denied');
-    } catch(e) { /* permissions API not supported */ }
+    } catch(e) {}
 
-    // Clear old cache
     try { localStorage.removeItem('rc2'); } catch(e) {}
 
     try {
@@ -199,7 +269,6 @@ const App = (() => {
       }
     } catch(e) {
       if (permDenied || e.message === 'denied') {
-        // Permission permanently denied — tell user how to fix
         if (promptText) {
           const isIOS = /iPhone|iPad|iOS/i.test(navigator.userAgent);
           const hint = isIOS
@@ -387,6 +456,16 @@ const App = (() => {
     // Load more
     const btnLoadMore=document.getElementById('btn-load-more');
     if(btnLoadMore) btnLoadMore.addEventListener('click',loadMoreBrowse);
+
+    // City picker
+    const cityName = document.getElementById('city-name');
+    if (cityName) cityName.addEventListener('click', openCityPicker);
+    const btnCloseCity = document.getElementById('btn-close-city-picker');
+    if (btnCloseCity) btnCloseCity.addEventListener('click', closeCityPicker);
+    const citySearch = document.getElementById('city-picker-search');
+    if (citySearch) citySearch.addEventListener('input', onCityPickerSearch);
+    const cityOverlay = document.getElementById('city-picker-overlay');
+    if (cityOverlay) cityOverlay.addEventListener('click',(e)=>{if(e.target===e.currentTarget)closeCityPicker()});
 
     // Relocate button
     const btnRelocate = document.getElementById('btn-relocate');
