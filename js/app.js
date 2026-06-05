@@ -104,7 +104,11 @@ const App = (() => {
      Refresh Logic
      ========================================================== */
   async function refreshRecommendations({ silent, manualCity } = {}) {
-    if (!silent) UIModule.showLoading();
+    if (silent) {
+      // Don't hide existing content, but still disable refresh during background update
+    } else {
+      UIModule.showLoading();
+    }
     UIModule.setRefreshEnabled(false);
     UIModule.hideError();
 
@@ -446,9 +450,9 @@ const App = (() => {
       renderFallback();
     }
 
-    // STEP 2: Try to get real location+weather in background, update if successful
+    // STEP 2: Try real location+weather in background (silent — don't hide recipes!)
     try {
-      await refreshRecommendations({silent:false});
+      await refreshRecommendations({silent:true});
     } catch(e) {
       console.error('Refresh failed, keeping defaults:', e);
     }
