@@ -58,6 +58,7 @@ const App = (() => {
      ========================================================== */
   function renderFromCache(cached) {
     if (!cached) return;
+    UIModule.hide('loading-skeleton');
     UIModule.renderWeatherBar(cached.context);
     if (cached.mealRecs) UIModule.renderTodayMeals(cached.mealRecs);
     if (cached.takeoutPrimary) UIModule.renderTakeoutSection(cached.takeoutPrimary);
@@ -66,6 +67,7 @@ const App = (() => {
   function renderFallback() {
     const fb = {temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isRainy:false,isSnowy:false,isExtreme:false,isDay:true,humidity:50,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
     try {
+      UIModule.hide('loading-skeleton');
       const mealRecs = getMealRecommendations(fb, []);
       const p = mealRecs['lunch']?.recipe || mealRecs['dinner']?.recipe;
       UIModule.renderWeatherBar(fb); UIModule.renderTodayMeals(mealRecs);
@@ -126,6 +128,7 @@ const App = (() => {
       const mealRecs = getMealRecommendations(context, recentIds);
 
       // Render
+      UIModule.hide('loading-skeleton');
       UIModule.renderWeatherBar(context);
       UIModule.renderTodayMeals(mealRecs);
 

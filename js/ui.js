@@ -218,6 +218,7 @@ const UIModule = (() => {
   ];
 
   function renderTodayMeals(mealRecs) {
+    hide('loading-skeleton');
     const grid = $('today-meals-grid');
     if (!grid) return;
     grid.innerHTML = MEAL_SLOTS.map(slot => {
