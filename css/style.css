@@ -1050,13 +1050,14 @@ details[open] .details-summary::after {
 }
 .btn-refresh-meal {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 5px 12px; flex-shrink: 0;
-  background: none; border: 1px solid var(--color-border);
+  padding: 5px 14px; flex-shrink: 0;
+  background: var(--color-text); border: none;
   border-radius: var(--radius-full); cursor: pointer;
-  color: var(--color-text-muted); font-family: inherit; font-size: var(--text-xs);
+  color: var(--color-surface); font-family: inherit; font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
   transition: all var(--ease-out); white-space: nowrap;
 }
-.btn-refresh-meal:active { background: var(--color-primary-glow); border-color: var(--color-primary); color: var(--color-primary); }
+.btn-refresh-meal:active { opacity: 0.8; }
 
 /* Tab bar */
 .cm-tab-bar {
