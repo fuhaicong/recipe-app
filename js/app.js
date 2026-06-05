@@ -68,8 +68,8 @@ const App = (() => {
     const fb = {temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isRainy:false,isSnowy:false,isExtreme:false,isDay:true,humidity:50,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
     try {
       UIModule.hide('loading-skeleton');
-      var cityBtn = document.getElementById('city-name');
-      if (cityBtn) cityBtn.innerHTML = '<svg width="14" height="14"><use href=\"#icon-pin\"/></svg> 北京';
+      var cnText = document.getElementById('city-name-text');
+      if (cnText) cnText.textContent = '北京';
       const mealRecs = getMealRecommendations(fb, []);
       const p = mealRecs['lunch']?.recipe || mealRecs['dinner']?.recipe;
       UIModule.renderWeatherBar(fb); UIModule.renderTodayMeals(mealRecs);
@@ -238,7 +238,8 @@ const App = (() => {
 
   function selectCity(city) {
     closeCityPicker();
-    document.getElementById('city-name').innerHTML = '<svg width="14" height="14"><use href="#icon-pin"/></svg> ' + city;
+    var cnText = document.getElementById('city-name-text');
+    if (cnText) cnText.textContent = city;
     // Trigger refresh with selected city
     refreshRecommendations({ silent: false, manualCity: city });
   }
@@ -250,9 +251,9 @@ const App = (() => {
   }
 
   async function onRelocate() {
-    const btn = document.getElementById('btn-relocate');
     const promptText = document.getElementById('location-prompt-text');
-    if (btn) { btn.disabled = true; btn.textContent = '定位中...'; }
+    const cnText = document.getElementById('city-name-text');
+    if (cnText) cnText.textContent = '定位中...';
 
     let permDenied = false;
     try {
@@ -284,7 +285,7 @@ const App = (() => {
       }
     }
 
-    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14"><use href="#icon-pin"/></svg> 重新定位'; }
+    if (cnText) cnText.textContent = '定位失败';
   }
 
   function onMealSlotClick(recipeId) {
@@ -459,19 +460,18 @@ const App = (() => {
     const btnLoadMore=document.getElementById('btn-load-more');
     if(btnLoadMore) btnLoadMore.addEventListener('click',loadMoreBrowse);
 
-    // City picker
+    // City name → GPS relocate
     const cityName = document.getElementById('city-name');
-    if (cityName) cityName.addEventListener('click', openCityPicker);
+    if (cityName) cityName.addEventListener('click', onRelocate);
+    // City picker button → manual city selection
+    const btnCityPicker = document.getElementById('btn-city-picker');
+    if (btnCityPicker) btnCityPicker.addEventListener('click', openCityPicker);
     const btnCloseCity = document.getElementById('btn-close-city-picker');
     if (btnCloseCity) btnCloseCity.addEventListener('click', closeCityPicker);
     const citySearch = document.getElementById('city-picker-search');
     if (citySearch) citySearch.addEventListener('input', onCityPickerSearch);
     const cityOverlay = document.getElementById('city-picker-overlay');
     if (cityOverlay) cityOverlay.addEventListener('click',(e)=>{if(e.target===e.currentTarget)closeCityPicker()});
-
-    // Relocate button
-    const btnRelocate = document.getElementById('btn-relocate');
-    if (btnRelocate) btnRelocate.addEventListener('click', onRelocate);
 
     // Today's meal slots (delegated)
     const mealsGrid=document.getElementById('today-meals-grid');
