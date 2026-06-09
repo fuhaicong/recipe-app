@@ -7,6 +7,7 @@ window.App = (() => {
   const HISTORY_KEY = 'recipe_history';
   const CUSTOM_KEY = 'recipe_custom';
   let currentContext = null;
+  let currentMealShown = new Set();
 
   /* ==========================================================
      LocalStorage Helpers
@@ -65,6 +66,7 @@ window.App = (() => {
     UIModule.hide('loading-skeleton');
     UIModule.renderWeatherBar(ctx);
     if (cached.currentRecs) UIModule.renderCurrentMeal(ctx.mealTime, cached.currentRecs);
+    if (cached.currentRecs) { currentMealShown.clear(); cached.currentRecs.forEach(function(r){currentMealShown.add(r.recipe.id);}); }
     if (cached.mealRecs) UIModule.renderTodayMeals(cached.mealRecs);
     if (cached.takeoutPrimary) UIModule.renderTakeoutSection(cached.takeoutPrimary);
   }
@@ -96,6 +98,14 @@ window.App = (() => {
     const scored = all.map(r => ({ recipe: r, score: RecipeModule.scoreRecipe(r, ctx, recentIds) })).sort((a, b) => b.score - a.score);
     const seen = new Set(), results = [];
     for (const s of scored) { if (seen.has(s.recipe.id)) continue; results.push(s); seen.add(s.recipe.id); if (results.length >= 3) break; }
+    return results;
+  }
+  function getCurrentMealTop3All(context, recentIds) {
+    const all = getAllRecipes();
+    const ctx = { ...context };
+    const scored = all.map(r => ({ recipe: r, score: RecipeModule.scoreRecipe(r, ctx, recentIds) })).sort((a, b) => b.score - a.score);
+    const seen = new Set(), results = [];
+    for (const s of scored) { if (seen.has(s.recipe.id)) continue; results.push(s); seen.add(s.recipe.id); }
     return results;
   }
 
@@ -161,6 +171,9 @@ window.App = (() => {
       const currentSlot = context.mealTime;
       const cRecs = getCurrentMealTop3(context, recentIds);
       UIModule.renderCurrentMeal(currentSlot, cRecs);
+      // Track shown recipes to avoid repeats on refresh-click
+      currentMealShown.clear();
+      cRecs.forEach(function(r){currentMealShown.add(r.recipe.id);});
 
       UIModule.renderTodayMeals(mealRecs);
 
@@ -198,10 +211,15 @@ window.App = (() => {
       currentContext = {temperature:22,feelsLike:22,tempCategory:'warm',weatherCode:0,weatherTag:'clear',isDay:true,season:'summer',mealTime:'lunch',region:'universal',cityName:'北京',provinceName:'北京',dateStr:'2026-06-04',session:0};
     }
     var count = WeatherModule.incrementRefreshCount();
-    // Vary session so scoring changes each click
     var ctx = Object.assign({}, currentContext, {session: count});
-    var recentIds = getRecentRecommendations();
-    var cRecs = getCurrentMealTop3(ctx, recentIds);
+    var recentIds = getRecentRecommendations().concat(Array.from(currentMealShown));
+    var allRecs = getCurrentMealTop3All(ctx, recentIds);
+    // Filter out already shown, pick 3 new ones
+    var fresh = allRecs.filter(function(r){return !currentMealShown.has(r.recipe.id);});
+    // If not enough fresh ones, reset and use all
+    if (fresh.length < 3) { currentMealShown.clear(); fresh = allRecs; }
+    var cRecs = fresh.slice(0, 3);
+    cRecs.forEach(function(r){currentMealShown.add(r.recipe.id);});
     UIModule.renderCurrentMeal(ctx.mealTime, cRecs);
     var cached = getCachedToday();
     if (cached) { cached.currentRecs = cRecs; saveTodayCache(cached); }
