@@ -135,6 +135,7 @@ window.App = (() => {
      Refresh Logic
      ========================================================== */
   async function refreshRecommendations({ silent, manualCity } = {}) {
+    console.log('[刷新] refreshRecommendations called, silent:', silent, 'manualCity:', manualCity);
     if (silent) {
       // Don't hide existing content, but still disable refresh during background update
     } else {
@@ -146,7 +147,9 @@ window.App = (() => {
     try {
       let context;
       try {
+        console.log('[刷新] 调用getWeatherContext...');
         context = await WeatherModule.getWeatherContext({ manualCity });
+        console.log('[刷新] getWeatherContext返回:', context.cityName);
       } catch (geoErr) {
         const code = geoErr.message;
         if (['GEOLOCATION_DENIED','GEOLOCATION_UNAVAILABLE','GEOLOCATION_TIMEOUT','GEOLOCATION_NOT_SUPPORTED'].includes(code)) {
@@ -189,7 +192,7 @@ window.App = (() => {
       UIModule.setOfflineBanner(false);
 
     } catch (e) {
-      console.error('Refresh failed:', e);
+      console.error('[刷新] 失败:', e.message, e);
       const stale = getCachedToday();
       if (stale) { renderFromCache(stale); UIModule.showError('刷新失败，显示上次结果'); }
       else { UIModule.showError('加载失败，请检查网络后重试', true); }
@@ -608,6 +611,7 @@ window.App = (() => {
      Init
      ========================================================== */
   function init() {
+    console.log('[初始化] init开始');
     window.addEventListener('online',()=>UIModule.setOfflineBanner(false));
     window.addEventListener('offline',()=>UIModule.setOfflineBanner(true));
     if(!navigator.onLine) UIModule.setOfflineBanner(true);
@@ -615,9 +619,11 @@ window.App = (() => {
     // Render IMMEDIATELY — zero async, zero API
     var cached = getCachedToday();
     var hasCache = cached && isCacheFresh(cached);
+    console.log('[初始化] hasCache:', hasCache);
     if (hasCache) {
       renderFromCache(cached);
     } else {
+      console.log('[初始化] 无缓存,调用renderFallback');
       renderFallback();
     }
 
@@ -625,7 +631,8 @@ window.App = (() => {
 
     // Background: try GPS + weather to update location & recipes
     if (!hasCache) {
-      setTimeout(() => { refreshRecommendations({silent:true}).catch(()=>{}); }, 500);
+      console.log('[初始化] 安排500ms后后台刷新...');
+      setTimeout(() => { console.log('[初始化] 后台刷新触发!'); refreshRecommendations({silent:true}).catch((e)=>{console.error('[初始化] 后台刷新失败:',e);}); }, 500);
     }
   }
 
