@@ -59,8 +59,8 @@
       </div>
     </article>
 
-    <!-- Loading -->
-    <div id="loading-skeleton" class="skeleton-card" aria-busy="true" role="status">
+    <!-- Loading (hidden by default, now instant render) -->
+    <div id="loading-skeleton" class="skeleton-card" hidden aria-busy="true" role="status">
       <div class="skeleton-line skeleton-line--title"></div>
       <div class="skeleton-line skeleton-line--subtitle"></div>
       <div class="skeleton-line skeleton-line--text"></div>
@@ -192,17 +192,6 @@
 
   <footer class="app-footer"><p>每日食谱 · 好好吃饭</p></footer>
 
-  <!-- Inline bootstrap: guarantees meals are never blank -->
-  <script>
-    (function(){
-      var g=document.getElementById('today-meals-grid');
-      var m=document.getElementById('today-meals');
-      var s=document.getElementById('loading-skeleton');
-      if(g)g.innerHTML='<article class="meal-slot-card"><div class="meal-slot-time">早餐</div><span class="meal-slot-emoji">🥣</span><div class="meal-slot-name">皮蛋瘦肉粥</div></article><article class="meal-slot-card"><div class="meal-slot-time">午餐</div><span class="meal-slot-emoji">🍅</span><div class="meal-slot-name">番茄炒蛋</div></article><article class="meal-slot-card"><div class="meal-slot-time">晚餐</div><span class="meal-slot-emoji">🍖</span><div class="meal-slot-name">红烧肉</div></article>';
-      if(s)s.hidden=true;
-      if(m)m.hidden=false;
-    })();
-  </script>
   <script src="js/recipes.js"></script>
   <script src="js/weather.js"></script>
   <script src="js/ui.js"></script>
