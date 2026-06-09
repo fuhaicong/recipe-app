@@ -241,10 +241,12 @@ const UIModule = (() => {
   }
 
   function renderDayContent(dayData, mealKey) {
-    var contentEl = $('day-content');
-    if (!contentEl) return;
+    var listEl = $('day-recipes-list');
+    if (!listEl) return;
     var top3 = (dayData && dayData[mealKey]) ? dayData[mealKey] : [];
-    contentEl.innerHTML = '<div class="day-recipes">'+top3.map(function(r) {
+    listEl.innerHTML =
+      '<button id="btn-refresh-day" class="btn-refresh-day" style="margin-bottom:4px"><svg width="14" height="14"><use href=\"#icon-refresh\"/></svg> 换一批</button>'+
+      '<div class="day-recipes">'+top3.map(function(r) {
       return '<div class="day-recipe" data-recipe-id="'+r.recipe.id+'">'+
         '<span class="day-recipe-emoji">'+r.recipe.emoji+'</span>'+
         '<div class="day-recipe-info">'+

@@ -84,15 +84,12 @@
 
     <!-- All-Day Recommendations -->
     <section id="today-meals" hidden aria-label="全天推荐">
-      <div class="section-header">
-        <h3 class="section-title">全天推荐</h3>
-        <button id="btn-refresh-day" class="btn-refresh-meal">
-          <svg width="15" height="15"><use href="#icon-refresh"/></svg> 换一批
-        </button>
-      </div>
+      <h3 class="section-title">全天推荐</h3>
       <div id="day-panel" class="day-panel">
         <div id="day-tabs" class="day-tabs"></div>
-        <div id="day-content" class="day-content"></div>
+        <div id="day-content" class="day-content">
+          <div id="day-recipes-list"></div>
+        </div>
       </div>
     </section>
 

@@ -560,9 +560,10 @@ window.App = (() => {
     var sheetBackdrop = document.querySelector('.sheet-backdrop');
     if (sheetBackdrop) sheetBackdrop.addEventListener('click', function() { UIModule.hideRecipeSheet(); });
 
-    // Day refresh button: only refresh current tab
-    var btnRefreshDay = document.getElementById('btn-refresh-day');
-    if (btnRefreshDay) btnRefreshDay.addEventListener('click', function() {
+    // Day refresh button (delegated via day-content since button is re-rendered)
+    var dayContent2 = document.getElementById('day-content');
+    if (dayContent2) dayContent2.addEventListener('click', function(e) {
+      if (!e.target.closest('#btn-refresh-day')) return;
       if (!currentContext) return;
       var activeTab = document.querySelector('.day-tab--active');
       var mealKey = activeTab ? activeTab.dataset.meal : 'lunch';
@@ -570,7 +571,6 @@ window.App = (() => {
       var ctx = Object.assign({}, currentContext, {session: count, mealTime: mealKey});
       var recentIds = getRecentRecommendations();
       var cRecs = getCurrentMealTop3(ctx, recentIds);
-      // Update only this slot in cache
       var cached = getCachedToday();
       if (cached && cached.dayRecs) {
         cached.dayRecs[mealKey] = cRecs;
