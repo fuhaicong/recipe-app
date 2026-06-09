@@ -3,7 +3,7 @@
    ============================================================ */
 
 window.App = (() => {
-  const STORAGE_KEY = 'recipe_today_v4';
+  const STORAGE_KEY = 'recipe_today_v5';
   const HISTORY_KEY = 'recipe_history';
   const CUSTOM_KEY = 'recipe_custom';
   let currentContext = null;
@@ -118,9 +118,9 @@ window.App = (() => {
       const scored = allRecipes
         .map(r => ({ recipe: r, score: RecipeModule.scoreRecipe(r, ctx, recentIds) }))
         .sort((a,b) => b.score - a.score);
-      const seen = new Set(), top5 = [];
-      for (const s of scored) { if (seen.has(s.recipe.id)) continue; top5.push(s); seen.add(s.recipe.id); if (top5.length >= 5) break; }
-      results[slot] = top5;
+      const seen = new Set(), list = [];
+      for (const s of scored) { if (seen.has(s.recipe.id)) continue; list.push(s); seen.add(s.recipe.id); if (list.length >= 15) break; }
+      results[slot] = list;
     });
     return results;
   }
