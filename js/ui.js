@@ -245,7 +245,7 @@ const UIModule = (() => {
     if (!contentEl) return;
     var top3 = (dayData && dayData[mealKey]) ? dayData[mealKey] : [];
     contentEl.innerHTML = '<div class="day-recipes">'+top3.map(function(r) {
-      return '<div class="day-recipe">'+
+      return '<div class="day-recipe" data-recipe-id="'+r.recipe.id+'">'+
         '<span class="day-recipe-emoji">'+r.recipe.emoji+'</span>'+
         '<div class="day-recipe-info">'+
           '<div class="day-recipe-name">'+esc(r.recipe.name.replace(r.recipe.emoji+' ',''))+'</div>'+
@@ -263,6 +263,26 @@ const UIModule = (() => {
     var active = document.querySelector('.day-tab[data-meal="'+mealKey+'"]');
     if (active) active.classList.add('day-tab--active');
     renderDayContent(dayData, mealKey);
+  }
+
+  /* ── Recipe Bottom Sheet ── */
+  function showRecipeSheet(recipe) {
+    var sheet = $('recipe-sheet');
+    var content = $('sheet-content');
+    if (!sheet || !content) return;
+    content.innerHTML =
+      '<div class="sheet-recipe-name">'+recipe.emoji+' '+esc(recipe.name.replace(recipe.emoji+' ',''))+'</div>'+
+      '<div class="sheet-recipe-desc">'+esc(recipe.description)+'</div>'+
+      '<div class="sheet-meta"><span>⏱ '+recipe.prepTimeMin+'分钟</span><span>·</span><span>'+(recipe.difficulty==='easy'?'简单':recipe.difficulty==='medium'?'中等':'挑战')+'</span></div>'+
+      '<div class="sheet-section"><h4>食材</h4><ul>'+recipe.ingredients.map(function(i){return'<li>'+esc(i)+'</li>'}).join('')+'</ul></div>'+
+      '<div class="sheet-section"><h4>做法</h4><ol>'+recipe.steps.map(function(s){return'<li>'+esc(s)+'</li>'}).join('')+'</ol></div>';
+    sheet.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function hideRecipeSheet() {
+    $('recipe-sheet').hidden = true;
+    document.body.style.overflow = '';
   }
 
   /* ==========================================================
@@ -530,7 +550,7 @@ const UIModule = (() => {
     showLoading, showLocationPrompt, hideLocationPrompt,
     showError, hideError, setOfflineBanner, setRefreshEnabled,
     copyTakeoutKeywords, copySingleKeyword,
-    renderTodayMeals, renderCurrentMeal, switchCurrentMealTab, switchDayTab, showBrowseOverlay, hideBrowseOverlay, renderBrowseList,
+    renderTodayMeals, renderCurrentMeal, switchCurrentMealTab, switchDayTab, showRecipeSheet, hideRecipeSheet, showBrowseOverlay, hideBrowseOverlay, renderBrowseList,
     renderBrowseDetail, showAddModal, hideAddModal, getAddFormData, clearAddForm,
   };
 })();

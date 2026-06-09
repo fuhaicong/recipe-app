@@ -545,6 +545,37 @@ window.App = (() => {
       });
     });
 
+    // Day recipe clicks: show bottom sheet
+    var dayContent = document.getElementById('day-content');
+    if (dayContent) dayContent.addEventListener('click', function(e) {
+      var recipe = e.target.closest('.day-recipe');
+      if (!recipe) return;
+      var recipeId = recipe.dataset.recipeId;
+      var all = getAllRecipes();
+      var r = all.find(function(x){return x.id===recipeId});
+      if (r) UIModule.showRecipeSheet(r);
+    });
+
+    // Bottom sheet close
+    var sheetBackdrop = document.querySelector('.sheet-backdrop');
+    if (sheetBackdrop) sheetBackdrop.addEventListener('click', function() { UIModule.hideRecipeSheet(); });
+
+    // Day refresh button
+    var btnRefreshDay = document.getElementById('btn-refresh-day');
+    if (btnRefreshDay) btnRefreshDay.addEventListener('click', function() {
+      if (!currentContext) return;
+      var count = WeatherModule.incrementRefreshCount();
+      var ctx = Object.assign({}, currentContext, {session: count});
+      // Get active day tab
+      var activeTab = document.querySelector('.day-tab--active');
+      var mealKey = activeTab ? activeTab.dataset.meal : 'lunch';
+      var recentIds = getRecentRecommendations();
+      var dayRecs = getDayRecommendations(ctx, recentIds);
+      UIModule.switchDayTab(mealKey, dayRecs);
+      var cached = getCachedToday();
+      if (cached) { cached.dayRecs = dayRecs; saveTodayCache(cached); }
+    });
+
     // Day tabs: switch meal
     var dayTabs = document.getElementById('day-tabs');
     if (dayTabs) dayTabs.addEventListener('click', function(e) {
