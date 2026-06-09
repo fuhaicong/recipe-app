@@ -118,9 +118,9 @@ window.App = (() => {
       const scored = allRecipes
         .map(r => ({ recipe: r, score: RecipeModule.scoreRecipe(r, ctx, recentIds) }))
         .sort((a,b) => b.score - a.score);
-      const seen = new Set(), top3 = [];
-      for (const s of scored) { if (seen.has(s.recipe.id)) continue; top3.push(s); seen.add(s.recipe.id); if (top3.length >= 3) break; }
-      results[slot] = top3;
+      const seen = new Set(), top5 = [];
+      for (const s of scored) { if (seen.has(s.recipe.id)) continue; top5.push(s); seen.add(s.recipe.id); if (top5.length >= 5) break; }
+      results[slot] = top5;
     });
     return results;
   }
