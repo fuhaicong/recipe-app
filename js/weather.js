@@ -146,14 +146,14 @@ const WeatherModule = (() => {
   /* ── LocalStorage cache (7 days) ── */
   function loadCache() {
     try {
-      const r = localStorage.getItem('rc2');
+      const r = localStorage.getItem('rc3');
       if (!r) return null;
       const d = JSON.parse(r);
       return (Date.now()-d.t < 7*86400000) ? { lat:d.lat, lon:d.lon, city:d.city, prov:d.prov } : null;
     } catch(e) { return null; }
   }
   function saveCache(lat, lon, city, prov) {
-    try { localStorage.setItem('rc2', JSON.stringify({ lat, lon, city, prov, t: Date.now() })); } catch(e) {}
+    try { localStorage.setItem('rc3', JSON.stringify({ lat, lon, city, prov, t: Date.now() })); } catch(e) {}
   }
 
   /* ── IP Geolocation (JSONP via pconline — always calls 'myCallback') ── */
