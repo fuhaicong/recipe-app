@@ -416,7 +416,8 @@ const UIModule = (() => {
 
   function hideLocationPrompt() {
     setText('location-error-msg', '');
-    $('city-input').value = '';
+    var inp = $('city-input');
+    if (inp) inp.value = '';
   }
 
   function showError(message, isRetryable) {
