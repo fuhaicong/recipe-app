@@ -156,6 +156,25 @@ const WeatherModule = (() => {
     try { localStorage.setItem('rc2', JSON.stringify({ lat, lon, city, prov, t: Date.now() })); } catch(e) {}
   }
 
+  /* ── IP Geolocation (JSONP from Chinese service, bypasses CORS) ── */
+  function getIPLocation() {
+    return new Promise((resolve, reject) => {
+      var cb = '_ipcb' + Date.now();
+      var script = document.createElement('script');
+      var timeout = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 3000);
+      function cleanup() { clearTimeout(timeout); if (script.parentNode) script.parentNode.removeChild(script); delete window[cb]; }
+      window[cb] = function(data) {
+        cleanup();
+        if (data && data.city) {
+          resolve({ cityName: data.city, provinceName: data.pro || '' });
+        } else { reject(new Error('no_data')); }
+      };
+      script.src = 'https://whois.pconline.com.cn/ipJson.jsp?callback=' + cb;
+      script.onerror = function() { cleanup(); reject(new Error('error')); };
+      document.head.appendChild(script);
+    });
+  }
+
   /* ==========================================================
      Main entry
      ========================================================== */
@@ -186,10 +205,19 @@ const WeatherModule = (() => {
         coord = { lat: pos.lat, lon: pos.lon, cityName: cityInfo.cityName, provinceName: cityInfo.provinceName };
         saveCache(pos.lat, pos.lon, cityInfo.cityName, cityInfo.provinceName);
       } catch(e) {
-        if (cached) {
-          coord = { lat: cached.lat, lon: cached.lon, cityName: cached.city||'当前位置', provinceName: cached.prov||'' };
-        } else {
-          coord = DEFAULT;
+        // GPS failed — try IP geolocation
+        try {
+          var ipLoc = await getIPLocation();
+          if (ipLoc && ipLoc.cityName) {
+            coord = { lat: 39.9, lon: 116.4, cityName: ipLoc.cityName, provinceName: ipLoc.provinceName };
+            saveCache(39.9, 116.4, ipLoc.cityName, ipLoc.provinceName);
+          }
+        } catch(e2) {
+          if (cached) {
+            coord = { lat: cached.lat, lon: cached.lon, cityName: cached.city||'当前位置', provinceName: cached.prov||'' };
+          } else {
+            coord = DEFAULT;
+          }
         }
       }
     }
