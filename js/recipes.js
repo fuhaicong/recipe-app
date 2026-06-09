@@ -6413,12 +6413,17 @@ const RecipeModule = (() => {
     if (context.region && recipe.tags.includes(context.region)) score += 10;
     else if (recipe.tags.includes('universal')) score += 5;
 
-    if (recipe.tags.includes(context.mealTime)) score += 15;
+    if (recipe.tags.includes(context.mealTime)) score += 30;
     else {
-      if (context.mealTime==='lunch' && recipe.tags.includes('quick_easy')) score += 8;
-      if (context.mealTime==='dinner' && recipe.tags.includes('hearty')) score += 8;
-      if (context.mealTime==='late_night' && recipe.tags.includes('comfort_food')) score += 8;
-      if (context.mealTime==='breakfast' && recipe.tags.includes('quick_easy')) score += 8;
+      // Penalize recipes tagged for a different meal time
+      var mealTags = ['breakfast','lunch','dinner','late_night'];
+      for (var mi=0;mi<mealTags.length;mi++) {
+        if (mealTags[mi]!==context.mealTime && recipe.tags.includes(mealTags[mi])) score -= 20;
+      }
+      if (context.mealTime==='lunch' && recipe.tags.includes('quick_easy')) score += 5;
+      if (context.mealTime==='dinner' && recipe.tags.includes('hearty')) score += 5;
+      if (context.mealTime==='late_night' && recipe.tags.includes('comfort_food')) score += 5;
+      if (context.mealTime==='breakfast' && recipe.tags.includes('quick_easy')) score += 5;
     }
 
     // Session-based variation: same session = same results, different session = different results
