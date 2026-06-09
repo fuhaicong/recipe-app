@@ -156,15 +156,30 @@ const WeatherModule = (() => {
     try { localStorage.setItem('rc2', JSON.stringify({ lat, lon, city, prov, t: Date.now() })); } catch(e) {}
   }
 
-  /* ── IP Geolocation via ipapi.co ── */
-  async function getIPLocation() {
-    try {
-      var d = await fetchJSON('https://ipapi.co/json/', 4000);
-      if (d && d.latitude && d.city) {
-        return { lat: d.latitude, lon: d.longitude, city: d.city, region: d.region || '' };
-      }
-    } catch(e) {}
-    return null;
+  /* ── IP Geolocation (JSONP, works anywhere) ── */
+  function getIPLocation() {
+    return new Promise((resolve, reject) => {
+      var cb = '_jpcb' + Date.now();
+      var script = document.createElement('script');
+      var tid = setTimeout(() => { if(script.parentNode)script.parentNode.removeChild(script); delete window[cb]; reject(new Error('timeout')); }, 4000);
+      window[cb] = function(data) {
+        clearTimeout(tid); if(script.parentNode)script.parentNode.removeChild(script); delete window[cb];
+        if (data && data.city) {
+          // Find coordinates from local city DB
+          var cityName = data.city;
+          var provName = data.pro || '';
+          // Try to find lat/lon from local DB
+          var lat = 39.9, lon = 116.4;
+          for (var i=0;i<CITY_COORDS.length;i++) {
+            if (CITY_COORDS[i][0]===cityName) { lat=CITY_COORDS[i][1]; lon=CITY_COORDS[i][2]; break; }
+          }
+          resolve({ lat: lat, lon: lon, city: cityName, region: provName });
+        } else { reject(new Error('no_data')); }
+      };
+      script.src = 'https://whois.pconline.com.cn/ipJson.jsp?callback=' + cb;
+      script.onerror = function() { clearTimeout(tid); if(script.parentNode)script.parentNode.removeChild(script); delete window[cb]; reject(new Error('error')); };
+      document.head.appendChild(script);
+    });
   }
 
   /* ==========================================================
