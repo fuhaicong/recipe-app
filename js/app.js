@@ -570,10 +570,10 @@ window.App = (() => {
       var count = WeatherModule.incrementRefreshCount();
       var ctx = Object.assign({}, currentContext, {session: count, mealTime: mealKey});
       var recentIds = getRecentRecommendations();
-      var cRecs = getCurrentMealTop3(ctx, recentIds);
+      var allRecs = getCurrentMealTop3All(ctx, recentIds).slice(0, 15);
       var cached = getCachedToday();
       if (cached && cached.dayRecs) {
-        cached.dayRecs[mealKey] = cRecs;
+        cached.dayRecs[mealKey] = allRecs;
         saveTodayCache(cached);
         UIModule.switchDayTab(mealKey, cached.dayRecs);
       }
