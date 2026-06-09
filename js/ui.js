@@ -219,22 +219,24 @@ const UIModule = (() => {
     { key: 'late_night', time: '夜宵', emoji: '🌃' },
   ];
 
-  function renderTodayMeals(dayData) {
+  function renderTodayMeals(dayData, currentMeal) {
     hide('loading-skeleton');
     var tabsEl = $('day-tabs');
     var contentEl = $('day-content');
     if (!tabsEl || !contentEl) return;
 
+    var activeKey = currentMeal || 'lunch';
+
     // Left: tabs
-    tabsEl.innerHTML = DAY_SLOTS.map(function(slot, i) {
-      return '<div class="day-tab'+(i===1?' day-tab--active':'')+'" data-meal="'+slot.key+'">'+
+    tabsEl.innerHTML = DAY_SLOTS.map(function(slot) {
+      return '<div class="day-tab'+(slot.key===activeKey?' day-tab--active':'')+'" data-meal="'+slot.key+'">'+
         '<span class="day-tab-emoji">'+slot.emoji+'</span>'+
         '<span class="day-tab-label">'+slot.time+'</span>'+
       '</div>';
     }).join('');
 
-    // Right: default show lunch (index 1)
-    renderDayContent(dayData, 'lunch');
+    // Right: show active meal's recipes
+    renderDayContent(dayData, activeKey);
     show('today-meals');
   }
 

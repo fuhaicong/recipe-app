@@ -67,7 +67,7 @@ window.App = (() => {
     UIModule.renderWeatherBar(ctx);
     if (cached.currentRecs) UIModule.renderCurrentMeal(ctx.mealTime, cached.currentRecs);
     if (cached.currentRecs) { currentMealShown.clear(); cached.currentRecs.forEach(function(r){currentMealShown.add(r.recipe.id);}); }
-    if (cached.dayRecs) UIModule.renderTodayMeals(cached.dayRecs);
+    if (cached.dayRecs) UIModule.renderTodayMeals(cached.dayRecs, ctx.mealTime);
     if (cached.takeoutPrimary) UIModule.renderTakeoutSection(cached.takeoutPrimary);
   }
 
@@ -84,7 +84,7 @@ window.App = (() => {
       const p = cRecs[0]?.recipe;
       UIModule.renderWeatherBar(fb);
       UIModule.renderCurrentMeal(fb.mealTime, cRecs);
-      UIModule.renderTodayMeals(dayRecs);
+      UIModule.renderTodayMeals(dayRecs, fb.mealTime);
       if (p) UIModule.renderTakeoutSection(p);
     } catch(e) { UIModule.showError('加载失败，请刷新重试', true); }
   }
@@ -171,7 +171,7 @@ window.App = (() => {
       currentMealShown.clear();
       cRecs.forEach(function(r){currentMealShown.add(r.recipe.id);});
 
-      UIModule.renderTodayMeals(dayRecs);
+      UIModule.renderTodayMeals(dayRecs, context.mealTime);
 
       const primary = cRecs[0]?.recipe || dayRecs['lunch']?.[0]?.recipe;
       if (primary) {
