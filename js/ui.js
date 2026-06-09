@@ -440,11 +440,13 @@ const UIModule = (() => {
   }
 
   function setRefreshEnabled(enabled) {
-    const btn = $('btn-refresh');
-    btn.disabled = !enabled;
-    if (enabled) {
+    var btn = $('btn-refresh');
+    if (btn) { btn.disabled = !enabled; }
+    var btn2 = $('btn-refresh-meal');
+    if (btn2) { btn2.disabled = !enabled; }
+    if (btn && enabled) {
       btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 18 18"><use href="#icon-refresh"/></svg> 换一个';
-    } else {
+    } else if (btn) {
       btn.innerHTML = '<span class="ptr-spinner"></span> 加载中...';
     }
   }
