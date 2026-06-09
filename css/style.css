@@ -1230,7 +1230,7 @@ details[open] .details-summary::after {
 .day-tab-count{font-size:10px;color:var(--color-text-muted)}
 .day-content{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--color-primary-glow);border-radius:var(--radius-lg);overflow:hidden;padding-bottom:16px}
 .day-content-head{flex-shrink:0;padding:8px 8px 0;text-align:right}
-#day-recipes-list{flex:1;overflow-y:auto;padding:4px 8px 8px;max-height:320px}
+#day-recipes-list{flex:1;overflow-y:auto;padding:4px 8px 8px;max-height:340px}
 .btn-refresh-day{align-self:flex-end;display:inline-flex;align-items:center;gap:4px;padding:5px 14px;flex-shrink:0;background:var(--color-text);border:none;border-radius:var(--radius-full);cursor:pointer;color:var(--color-surface);font-family:inherit;font-size:12px;font-weight:var(--weight-semibold);transition:all var(--ease-out)}
 .btn-refresh-day:active{opacity:.8}
 .day-recipes{display:flex;flex-direction:column;gap:6px;text-align:left}
