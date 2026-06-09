@@ -209,7 +209,7 @@ const UIModule = (() => {
   }
 
   /* ==========================================================
-     All-Day Tabs
+     All-Day: Left Tabs + Right Recipes
      ========================================================== */
   var DAY_SLOTS = [
     { key: 'breakfast', time: '早餐', emoji: '🌅' },
@@ -220,28 +220,47 @@ const UIModule = (() => {
 
   function renderTodayMeals(dayData) {
     hide('loading-skeleton');
-    var container = $('day-tabs');
-    if (!container) return;
-    container.innerHTML = DAY_SLOTS.map(function(slot) {
-      var top3 = (dayData && dayData[slot.key]) ? dayData[slot.key] : [];
-      var recipesHtml = top3.map(function(r) {
-        return '<div class="day-tab-recipe" data-recipe-id="'+r.recipe.id+'">'+
-          '<span class="day-tab-recipe-emoji">'+r.recipe.emoji+'</span>'+
-          '<span class="day-tab-recipe-name">'+esc(r.recipe.name.replace(r.recipe.emoji+' ',''))+'</span>'+
-          '<span class="day-tab-recipe-meta">'+r.recipe.prepTimeMin+'min</span>'+
-          '<span class="day-tab-recipe-score">'+r.score+'%</span>'+
-        '</div>';
-      }).join('');
-      return '<div class="day-tab'+(slot.key==='lunch'?' open':'')+'">'+
-        '<div class="day-tab-header" data-meal="'+slot.key+'">'+
-          '<span class="day-tab-emoji">'+slot.emoji+'</span>'+
-          '<span class="day-tab-label">'+slot.time+' ('+top3.length+'道)</span>'+
-          '<span class="day-tab-arrow">▼</span>'+
-        '</div>'+
-        '<div class="day-tab-body"><div class="day-tab-recipes">'+recipesHtml+'</div></div>'+
+    var tabsEl = $('day-tabs');
+    var contentEl = $('day-content');
+    if (!tabsEl || !contentEl) return;
+
+    // Left: tabs
+    tabsEl.innerHTML = DAY_SLOTS.map(function(slot, i) {
+      return '<div class="day-tab'+(i===1?' day-tab--active':'')+'" data-meal="'+slot.key+'">'+
+        '<span class="day-tab-emoji">'+slot.emoji+'</span>'+
+        '<span class="day-tab-label">'+slot.time+'</span>'+
       '</div>';
     }).join('');
+
+    // Right: default show lunch (index 1)
+    renderDayContent(dayData, 'lunch');
     show('today-meals');
+  }
+
+  function renderDayContent(dayData, mealKey) {
+    var contentEl = $('day-content');
+    if (!contentEl) return;
+    var top3 = (dayData && dayData[mealKey]) ? dayData[mealKey] : [];
+    contentEl.innerHTML = '<div class="day-recipes">'+top3.map(function(r) {
+      return '<div class="day-recipe">'+
+        '<span class="day-recipe-emoji">'+r.recipe.emoji+'</span>'+
+        '<div class="day-recipe-info">'+
+          '<div class="day-recipe-name">'+esc(r.recipe.name.replace(r.recipe.emoji+' ',''))+'</div>'+
+          '<div class="day-recipe-desc">'+esc(r.recipe.description)+'</div>'+
+        '</div>'+
+        '<div class="day-recipe-meta">'+
+          '<span class="day-recipe-score">'+r.score+'%</span>'+
+        '</div>'+
+      '</div>';
+    }).join('')+'</div>';
+  }
+
+  function switchDayTab(mealKey, dayData) {
+    var tabs = document.querySelectorAll('.day-tab');
+    tabs.forEach(function(t) { t.classList.remove('day-tab--active'); });
+    var active = document.querySelector('.day-tab[data-meal="'+mealKey+'"]');
+    if (active) active.classList.add('day-tab--active');
+    renderDayContent(dayData, mealKey);
   }
 
   /* ==========================================================
@@ -509,7 +528,7 @@ const UIModule = (() => {
     showLoading, showLocationPrompt, hideLocationPrompt,
     showError, hideError, setOfflineBanner, setRefreshEnabled,
     copyTakeoutKeywords, copySingleKeyword,
-    renderTodayMeals, renderCurrentMeal, switchCurrentMealTab, showBrowseOverlay, hideBrowseOverlay, renderBrowseList,
+    renderTodayMeals, renderCurrentMeal, switchCurrentMealTab, switchDayTab, showBrowseOverlay, hideBrowseOverlay, renderBrowseList,
     renderBrowseDetail, showAddModal, hideAddModal, getAddFormData, clearAddForm,
   };
 })();

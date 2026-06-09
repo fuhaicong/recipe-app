@@ -1202,25 +1202,25 @@ details[open] .details-summary::after {
 }
 
 /* ==========================================================
-   All-Day Tabs
+   All-Day: Left tabs + Right recipes
    ========================================================== */
-.day-tabs{display:flex;flex-direction:column;gap:8px}
-.day-tab{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden}
-.day-tab-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;transition:background .15s ease}
-.day-tab-header:active{background:var(--color-primary-glow)}
-.day-tab-emoji{font-size:22px;flex-shrink:0}
-.day-tab-label{flex:1;font-family:var(--font-heading);font-size:var(--text-base);font-weight:var(--weight-semibold);color:var(--color-text)}
-.day-tab-arrow{font-size:12px;color:var(--color-text-muted);transition:transform var(--ease-out)}
-.day-tab.open .day-tab-arrow{transform:rotate(180deg)}
-.day-tab-body{display:none;padding:0 16px 14px}
-.day-tab.open .day-tab-body{display:block}
-.day-tab-recipes{display:flex;flex-direction:column;gap:4px}
-.day-tab-recipe{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s ease}
-.day-tab-recipe:active{background:var(--color-primary-glow)}
-.day-tab-recipe-emoji{font-size:18px;flex-shrink:0}
-.day-tab-recipe-name{flex:1;font-size:var(--text-sm);color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.day-tab-recipe-meta{font-size:11px;color:var(--ink-muted);margin-right:4px}
-.day-tab-recipe-score{font-size:11px;font-weight:var(--weight-semibold);color:var(--sage-deep);background:var(--sage-light);padding:2px 6px;border-radius:var(--radius-full);flex-shrink:0}
+.day-panel{display:flex;gap:8px;min-height:200px}
+.day-tabs{display:flex;flex-direction:column;gap:4px;flex-shrink:0;width:72px}
+.day-tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:var(--radius-md);cursor:pointer;border:1px solid transparent;transition:all var(--ease-out);text-align:center}
+.day-tab:hover,.day-tab--active{background:var(--color-primary-glow);border-color:var(--color-primary-light)}
+.day-tab-emoji{font-size:20px}
+.day-tab-label{font-size:11px;font-weight:var(--weight-semibold);color:var(--color-text)}
+.day-tab-count{font-size:10px;color:var(--color-text-muted)}
+.day-content{flex:1;min-width:0}
+.day-recipes{display:flex;flex-direction:column;gap:6px}
+.day-recipe{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;transition:all var(--ease-out)}
+.day-recipe:active{background:var(--color-primary-glow)}
+.day-recipe-emoji{font-size:20px;flex-shrink:0}
+.day-recipe-info{flex:1;min-width:0}
+.day-recipe-name{font-size:var(--text-sm);font-weight:var(--weight-semibold);color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.day-recipe-desc{font-size:11px;color:var(--color-text-muted);margin-top:1px}
+.day-recipe-meta{display:flex;align-items:center;gap:8px}
+.day-recipe-score{font-size:12px;font-weight:var(--weight-semibold);color:var(--sage-deep);background:var(--sage-light);padding:3px 8px;border-radius:var(--radius-full);flex-shrink:0}
 
 /* ==========================================================
    Overlay (Browse & Add)

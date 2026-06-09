@@ -545,13 +545,15 @@ window.App = (() => {
       });
     });
 
-    // Day tabs: toggle open/close
+    // Day tabs: switch meal
     var dayTabs = document.getElementById('day-tabs');
     if (dayTabs) dayTabs.addEventListener('click', function(e) {
-      var header = e.target.closest('.day-tab-header');
-      if (!header) return;
-      var tab = header.parentElement;
-      tab.classList.toggle('open');
+      var tab = e.target.closest('.day-tab');
+      if (!tab) return;
+      var mealKey = tab.dataset.meal;
+      var cached = getCachedToday();
+      var dayData = cached && cached.dayRecs ? cached.dayRecs : {};
+      UIModule.switchDayTab(mealKey, dayData);
     });
 
     // Tab bar: switch active recipe
