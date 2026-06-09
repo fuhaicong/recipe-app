@@ -6339,7 +6339,7 @@ const RecipeModule = (() => {
   }
 
   function getTempCategory(temp) {
-    if (temp > 30) return 'hot';
+    if (temp > 38) return 'hot';
     if (temp >= 20) return 'warm';
     if (temp >= 10) return 'cool';
     return 'cold';
