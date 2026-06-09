@@ -156,41 +156,40 @@ const WeatherModule = (() => {
     try { localStorage.setItem('rc2', JSON.stringify({ lat, lon, city, prov, t: Date.now() })); } catch(e) {}
   }
 
-  /* ── IP Geolocation (JSONP, works anywhere) ── */
+  /* ── IP Geolocation (JSONP via pconline — always calls 'myCallback') ── */
   function getIPLocation() {
     return new Promise((resolve, reject) => {
-      console.log('[定位] 正在请求IP定位...');
+      console.log('[定位] 正在请求IP定位(JSONP)...');
       var cb = '_jpcb' + Date.now();
       var script = document.createElement('script');
       var tid = setTimeout(() => {
-        console.log('[定位] 请求超时(4s)');
-        if(script.parentNode)script.parentNode.removeChild(script); delete window[cb]; reject(new Error('timeout'));
+        console.log('[定位] 请求超时(4s), 清理');
+        if(script.parentNode)script.parentNode.removeChild(script); delete window.myCallback; reject(new Error('timeout'));
       }, 4000);
-      window[cb] = function(data) {
-        clearTimeout(tid); if(script.parentNode)script.parentNode.removeChild(script); delete window[cb];
-        console.log('[定位] 请求完成, 原始数据:', JSON.stringify(data));
+      window.myCallback = function(data) {
+        clearTimeout(tid); if(script.parentNode)script.parentNode.removeChild(script); delete window.myCallback;
+        console.log('[定位] JSONP返回, 原始数据:', JSON.stringify(data));
         if (data && data.city) {
-          var cityName = data.city;
-          var provName = data.pro || '';
-          console.log('[定位] 解析城市:', cityName, '省份:', provName);
+          var cityName = data.city, provName = data.pro || '';
+          console.log('[定位] 城市:', cityName, '省份:', provName);
           var lat = 39.9, lon = 116.4;
           for (var i=0;i<CITY_COORDS.length;i++) {
             if (CITY_COORDS[i][0]===cityName) { lat=CITY_COORDS[i][1]; lon=CITY_COORDS[i][2]; break; }
           }
-          console.log('[定位] 坐标:', lat, lon);
+          console.log('[定位] 坐标匹配:', lat, lon);
           resolve({ lat: lat, lon: lon, city: cityName, region: provName });
         } else {
-          console.log('[定位] 数据缺少city字段');
+          console.log('[定位] 数据无city字段');
           reject(new Error('no_data'));
         }
       };
-      script.src = 'https://whois.pconline.com.cn/ipJson.jsp?callback=' + cb;
+      script.src = 'https://whois.pconline.com.cn/ipJson.jsp?callback=myCallback';
       script.onerror = function() {
-        console.log('[定位] 脚本加载失败');
-        clearTimeout(tid); if(script.parentNode)script.parentNode.removeChild(script); delete window[cb]; reject(new Error('error'));
+        console.log('[定位] script加载失败');
+        clearTimeout(tid); if(script.parentNode)script.parentNode.removeChild(script); delete window.myCallback; reject(new Error('error'));
       };
       document.head.appendChild(script);
-      console.log('[定位] 已发送请求...');
+      console.log('[定位] script已插入DOM,等待响应...');
     });
   }
 
