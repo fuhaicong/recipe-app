@@ -248,10 +248,9 @@ const UIModule = (() => {
         '<div class="day-recipe-info">'+
           '<div class="day-recipe-name">'+esc(r.recipe.name.replace(r.recipe.emoji+' ',''))+'</div>'+
           '<div class="day-recipe-desc">'+esc(r.recipe.description)+'</div>'+
+          '<div class="day-recipe-meta">⏱ '+r.recipe.prepTimeMin+'分钟 · '+(r.recipe.difficulty==='easy'?'简单':r.recipe.difficulty==='medium'?'中等':'挑战')+'</div>'+
         '</div>'+
-        '<div class="day-recipe-meta">'+
-          '<span class="day-recipe-score">'+r.score+'%</span>'+
-        '</div>'+
+        '<span class="day-recipe-score">'+r.score+'%</span>'+
       '</div>';
     }).join('')+'</div>';
   }
