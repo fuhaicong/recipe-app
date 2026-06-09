@@ -350,7 +350,12 @@ window.App = (() => {
     renderBrowseTags();
   }
 
-  function closeBrowse() { UIModule.hideBrowseOverlay(); }
+  function closeBrowse() {
+    UIModule.hideBrowseOverlay();
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('nav-item--active'));
+    var recTab = document.querySelector('.nav-item[data-tab=\"recommend\"]');
+    if (recTab) recTab.classList.add('nav-item--active');
+  }
 
   function filterAndRenderBrowse() {
     const allRecipes = getAllRecipes();
@@ -512,6 +517,20 @@ window.App = (() => {
     // Relocate button
     const btnRelocate = document.getElementById('btn-relocate');
     if (btnRelocate) btnRelocate.addEventListener('click', onRelocate);
+
+    // Bottom nav
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', function(){
+        var tab = this.dataset.tab;
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('nav-item--active'));
+        this.classList.add('nav-item--active');
+        if (tab === 'recommend') {
+          UIModule.hideBrowseOverlay();
+        } else if (tab === 'recipes') {
+          openBrowse();
+        }
+      });
+    });
 
     // Tab bar: switch active recipe
     const tabBar = document.getElementById('cm-tab-bar');
