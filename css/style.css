@@ -1250,8 +1250,7 @@ details[open] .details-summary::after {
   inset: 0;
   z-index: 100;
   background: var(--color-bg);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  display: flex; flex-direction: column;
   animation: overlayIn 200ms ease;
 }
 
@@ -1260,14 +1259,23 @@ details[open] .details-summary::after {
   to   { opacity: 1; }
 }
 
+.overlay-head {
+  flex-shrink: 0;
+  padding-top: env(safe-area-inset-top, 16px);
+}
+
 .overlay-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: var(--space-lg) var(--space-xl);
-  padding-top: max(var(--space-lg), env(safe-area-inset-top, 16px));
-  position: sticky; top: 0; background: var(--color-bg); z-index: 1;
   border-bottom: 1px solid var(--color-border);
+}
+
+.overlay-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .overlay-title {
@@ -1290,8 +1298,7 @@ details[open] .details-summary::after {
 
 /* Search */
 .overlay-search {
-  position: sticky; top: 58px; background: var(--color-bg);
-  padding: var(--space-md) var(--space-xl); z-index: 2;
+  padding: var(--space-sm) var(--space-xl);
   display: flex; align-items: center; gap: var(--space-sm);
 }
 
@@ -1310,8 +1317,7 @@ details[open] .details-summary::after {
 .browse-tags {
   display: flex; gap: var(--space-xs);
   padding: 0 var(--space-xl) var(--space-sm);
-  flex-wrap: wrap; position: sticky; top: 116px;
-  background: var(--color-bg); z-index: 3;
+  flex-wrap: wrap;
 }
 
 .browse-tag-chip {

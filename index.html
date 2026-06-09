@@ -123,22 +123,26 @@
 
   <!-- ====== Browse Recipes Overlay ====== -->
   <div id="browse-overlay" class="overlay" hidden>
-    <div class="overlay-header">
-      <h2 class="overlay-title">全部菜谱 <span id="browse-count" class="browse-count"></span></h2>
-      <button id="btn-close-browse" class="btn-icon" aria-label="关闭">
-        <svg width="20" height="20"><use href="#icon-x"/></svg>
-      </button>
+    <div class="overlay-head">
+      <div class="overlay-header">
+        <h2 class="overlay-title">全部菜谱 <span id="browse-count" class="browse-count"></span></h2>
+        <button id="btn-close-browse" class="btn-icon" aria-label="关闭">
+          <svg width="20" height="20"><use href="#icon-x"/></svg>
+        </button>
+      </div>
+      <div class="overlay-search">
+        <svg width="15" height="15" class="search-icon"><use href="#icon-search"/></svg>
+        <input type="search" id="browse-search" class="search-input" placeholder="搜索菜名或食材..." autocomplete="off">
+      </div>
+      <div id="browse-tags" class="browse-tags"></div>
     </div>
-    <div class="overlay-search">
-      <svg width="15" height="15" class="search-icon"><use href="#icon-search"/></svg>
-      <input type="search" id="browse-search" class="search-input" placeholder="搜索菜名或食材..." autocomplete="off">
+    <div class="overlay-body">
+      <div id="browse-list" class="browse-list"></div>
+      <div id="browse-load-more" class="browse-load-more" hidden>
+        <button id="btn-load-more" class="btn btn-secondary btn-block">加载更多</button>
+      </div>
+      <div id="browse-empty" class="browse-empty" hidden>没有找到匹配的菜谱</div>
     </div>
-    <div id="browse-tags" class="browse-tags"></div>
-    <div id="browse-list" class="browse-list"></div>
-    <div id="browse-load-more" class="browse-load-more" hidden>
-      <button id="btn-load-more" class="btn btn-secondary btn-block">加载更多</button>
-    </div>
-    <div id="browse-empty" class="browse-empty" hidden>没有找到匹配的菜谱</div>
   </div>
 
   <!-- ====== Add Recipe Modal ====== -->
