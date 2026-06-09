@@ -244,8 +244,17 @@ const UIModule = (() => {
     var listEl = $('day-recipes-list');
     if (!listEl) return;
     var top3 = (dayData && dayData[mealKey]) ? dayData[mealKey] : [];
+    // Fixed head with refresh button
+    var headEl = document.querySelector('.day-content-head');
+    if (!headEl) {
+      headEl = document.createElement('div');
+      headEl.className = 'day-content-head';
+      var contentEl = document.getElementById('day-content');
+      if (contentEl) contentEl.insertBefore(headEl, contentEl.firstChild);
+    }
+    headEl.innerHTML = '<button id="btn-refresh-day" class="btn-refresh-day"><svg width="14" height="14"><use href=\"#icon-refresh\"/></svg> 换一批</button>';
+
     listEl.innerHTML =
-      '<button id="btn-refresh-day" class="btn-refresh-day" style="margin-bottom:4px"><svg width="14" height="14"><use href=\"#icon-refresh\"/></svg> 换一批</button>'+
       '<div class="day-recipes">'+top3.map(function(r) {
       return '<div class="day-recipe" data-recipe-id="'+r.recipe.id+'">'+
         '<span class="day-recipe-emoji">'+r.recipe.emoji+'</span>'+
