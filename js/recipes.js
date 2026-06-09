@@ -6413,7 +6413,7 @@ const RecipeModule = (() => {
     if (context.region && recipe.tags.includes(context.region)) score += 10;
     else if (recipe.tags.includes('universal')) score += 5;
 
-    if (recipe.tags.includes(context.mealTime)) score += 30;
+    if (recipe.tags.includes(context.mealTime)) score += 15;
     else {
       // Penalize recipes tagged for a different meal time
       var mealTags = ['breakfast','lunch','snack','dinner','late_night'];
