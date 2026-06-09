@@ -1425,7 +1425,7 @@ select.form-input {
    ========================================================== */
 .fab {
   position: fixed;
-  bottom: max(var(--space-xl), env(safe-area-inset-bottom, 20px));
+  bottom: max(70px, calc(env(safe-area-inset-bottom, 20px) + 50px));
   right: var(--space-xl);
   width: 52px; height: 52px;
   border-radius: 50%; border: none;
