@@ -173,8 +173,9 @@ const WeatherModule = (() => {
           var cityName = data.city, provName = data.pro || '';
           console.log('[定位] 城市:', cityName, '省份:', provName);
           var lat = 39.9, lon = 116.4;
+          var shortName = cityName.replace(/市$/,'');
           for (var i=0;i<CITY_COORDS.length;i++) {
-            if (CITY_COORDS[i][0]===cityName) { lat=CITY_COORDS[i][1]; lon=CITY_COORDS[i][2]; break; }
+            if (CITY_COORDS[i][0]===cityName || CITY_COORDS[i][0]===shortName) { lat=CITY_COORDS[i][1]; lon=CITY_COORDS[i][2]; break; }
           }
           console.log('[定位] 坐标匹配:', lat, lon);
           resolve({ lat: lat, lon: lon, city: cityName, region: provName });
@@ -222,13 +223,18 @@ const WeatherModule = (() => {
         var ipLoc = await getIPLocation();
         if (ipLoc && ipLoc.city) {
           console.log('[定位] IP定位成功,城市:', ipLoc.city);
-          var cityInfo = reverseCityName(ipLoc.lat, ipLoc.lon);
-          var cnName = (cityInfo && cityInfo.cityName !== '当前位置') ? cityInfo.cityName : ipLoc.city;
-          var cnProv = (cityInfo && cityInfo.provinceName) ? cityInfo.provinceName : ipLoc.region;
-          coord = { lat: ipLoc.lat, lon: ipLoc.lon, cityName: cnName, provinceName: cnProv };
-          saveCache(ipLoc.lat, ipLoc.lon, cnName, cnProv);
+          // Trust the IP city name, use its real coordinates
+          var cnName = ipLoc.city;
+          var cnProv = ipLoc.region;
+          var lat = ipLoc.lat, lon = ipLoc.lon;
+          var shortName = cnName.replace(/市$/,'');
+          for (var i=0;i<CITY_COORDS.length;i++) {
+            if (CITY_COORDS[i][0]===cnName || CITY_COORDS[i][0]===shortName) { lat=CITY_COORDS[i][1]; lon=CITY_COORDS[i][2]; break; }
+          }
+          coord = { lat: lat, lon: lon, cityName: cnName, provinceName: cnProv };
+          saveCache(lat, lon, cnName, cnProv);
           located = true;
-          console.log('[定位] 最终城市:', cnName, cnProv);
+          console.log('[定位] 最终:', cnName, cnProv, lat, lon);
         } else {
           console.log('[定位] IP定位返回数据无效');
         }
