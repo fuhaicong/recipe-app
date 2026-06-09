@@ -3,7 +3,7 @@
    ============================================================ */
 
 window.App = (() => {
-  const STORAGE_KEY = 'recipe_today_v3';
+  const STORAGE_KEY = 'recipe_today_v4';
   const HISTORY_KEY = 'recipe_history';
   const CUSTOM_KEY = 'recipe_custom';
   let currentContext = null;
