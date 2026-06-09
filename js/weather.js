@@ -159,26 +159,38 @@ const WeatherModule = (() => {
   /* ── IP Geolocation (JSONP, works anywhere) ── */
   function getIPLocation() {
     return new Promise((resolve, reject) => {
+      console.log('[定位] 正在请求IP定位...');
       var cb = '_jpcb' + Date.now();
       var script = document.createElement('script');
-      var tid = setTimeout(() => { if(script.parentNode)script.parentNode.removeChild(script); delete window[cb]; reject(new Error('timeout')); }, 4000);
+      var tid = setTimeout(() => {
+        console.log('[定位] 请求超时(4s)');
+        if(script.parentNode)script.parentNode.removeChild(script); delete window[cb]; reject(new Error('timeout'));
+      }, 4000);
       window[cb] = function(data) {
         clearTimeout(tid); if(script.parentNode)script.parentNode.removeChild(script); delete window[cb];
+        console.log('[定位] 请求完成, 原始数据:', JSON.stringify(data));
         if (data && data.city) {
-          // Find coordinates from local city DB
           var cityName = data.city;
           var provName = data.pro || '';
-          // Try to find lat/lon from local DB
+          console.log('[定位] 解析城市:', cityName, '省份:', provName);
           var lat = 39.9, lon = 116.4;
           for (var i=0;i<CITY_COORDS.length;i++) {
             if (CITY_COORDS[i][0]===cityName) { lat=CITY_COORDS[i][1]; lon=CITY_COORDS[i][2]; break; }
           }
+          console.log('[定位] 坐标:', lat, lon);
           resolve({ lat: lat, lon: lon, city: cityName, region: provName });
-        } else { reject(new Error('no_data')); }
+        } else {
+          console.log('[定位] 数据缺少city字段');
+          reject(new Error('no_data'));
+        }
       };
       script.src = 'https://whois.pconline.com.cn/ipJson.jsp?callback=' + cb;
-      script.onerror = function() { clearTimeout(tid); if(script.parentNode)script.parentNode.removeChild(script); delete window[cb]; reject(new Error('error')); };
+      script.onerror = function() {
+        console.log('[定位] 脚本加载失败');
+        clearTimeout(tid); if(script.parentNode)script.parentNode.removeChild(script); delete window[cb]; reject(new Error('error'));
+      };
       document.head.appendChild(script);
+      console.log('[定位] 已发送请求...');
     });
   }
 
@@ -206,20 +218,26 @@ const WeatherModule = (() => {
       var located = false;
 
       // 1. Try IP geolocation (fast, works everywhere)
+      console.log('[定位] 开始IP定位...');
       try {
         var ipLoc = await getIPLocation();
         if (ipLoc && ipLoc.city) {
+          console.log('[定位] IP定位成功,城市:', ipLoc.city);
           var cityInfo = reverseCityName(ipLoc.lat, ipLoc.lon);
           var cnName = (cityInfo && cityInfo.cityName !== '当前位置') ? cityInfo.cityName : ipLoc.city;
           var cnProv = (cityInfo && cityInfo.provinceName) ? cityInfo.provinceName : ipLoc.region;
           coord = { lat: ipLoc.lat, lon: ipLoc.lon, cityName: cnName, provinceName: cnProv };
           saveCache(ipLoc.lat, ipLoc.lon, cnName, cnProv);
           located = true;
+          console.log('[定位] 最终城市:', cnName, cnProv);
+        } else {
+          console.log('[定位] IP定位返回数据无效');
         }
-      } catch(e) {}
+      } catch(e) { console.log('[定位] IP定位失败:', e.message); }
 
       // 2. IP failed, try GPS
       if (!located) {
+        console.log('[定位] IP失败,尝试GPS...');
         try {
           const pos = await Promise.race([
             getGPSPosition(),
