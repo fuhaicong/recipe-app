@@ -156,23 +156,15 @@ const WeatherModule = (() => {
     try { localStorage.setItem('rc2', JSON.stringify({ lat, lon, city, prov, t: Date.now() })); } catch(e) {}
   }
 
-  /* ── IP Geolocation (JSONP from Chinese service, bypasses CORS) ── */
-  function getIPLocation() {
-    return new Promise((resolve, reject) => {
-      var cb = '_ipcb' + Date.now();
-      var script = document.createElement('script');
-      var timeout = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 3000);
-      function cleanup() { clearTimeout(timeout); if (script.parentNode) script.parentNode.removeChild(script); delete window[cb]; }
-      window[cb] = function(data) {
-        cleanup();
-        if (data && data.city) {
-          resolve({ cityName: data.city, provinceName: data.pro || '' });
-        } else { reject(new Error('no_data')); }
-      };
-      script.src = 'https://whois.pconline.com.cn/ipJson.jsp?callback=' + cb;
-      script.onerror = function() { cleanup(); reject(new Error('error')); };
-      document.head.appendChild(script);
-    });
+  /* ── IP Geolocation via ipapi.co ── */
+  async function getIPLocation() {
+    try {
+      var d = await fetchJSON('https://ipapi.co/json/', 4000);
+      if (d && d.latitude && d.city) {
+        return { lat: d.latitude, lon: d.longitude, city: d.city, region: d.region || '' };
+      }
+    } catch(e) {}
+    return null;
   }
 
   /* ==========================================================
@@ -194,30 +186,43 @@ const WeatherModule = (() => {
         coord = { ...DEFAULT, cityName: opts.manualCity, provinceName: '' };
       }
     } else {
-      // Race GPS against 2s timeout. Never block page load on slow GPS.
+      // Try IP first (fast, reliable), fallback to GPS
       const cached = loadCache();
+      var located = false;
+
+      // 1. Try IP geolocation (fast, works everywhere)
       try {
-        const pos = await Promise.race([
-          getGPSPosition(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('gps_slow')), 5000))
-        ]);
-        const cityInfo = reverseCityName(pos.lat, pos.lon);
-        coord = { lat: pos.lat, lon: pos.lon, cityName: cityInfo.cityName, provinceName: cityInfo.provinceName };
-        saveCache(pos.lat, pos.lon, cityInfo.cityName, cityInfo.provinceName);
-      } catch(e) {
-        // GPS failed — try IP geolocation
+        var ipLoc = await getIPLocation();
+        if (ipLoc && ipLoc.city) {
+          var cityInfo = reverseCityName(ipLoc.lat, ipLoc.lon);
+          var cnName = (cityInfo && cityInfo.cityName !== '当前位置') ? cityInfo.cityName : ipLoc.city;
+          var cnProv = (cityInfo && cityInfo.provinceName) ? cityInfo.provinceName : ipLoc.region;
+          coord = { lat: ipLoc.lat, lon: ipLoc.lon, cityName: cnName, provinceName: cnProv };
+          saveCache(ipLoc.lat, ipLoc.lon, cnName, cnProv);
+          located = true;
+        }
+      } catch(e) {}
+
+      // 2. IP failed, try GPS
+      if (!located) {
         try {
-          var ipLoc = await getIPLocation();
-          if (ipLoc && ipLoc.cityName) {
-            coord = { lat: 39.9, lon: 116.4, cityName: ipLoc.cityName, provinceName: ipLoc.provinceName };
-            saveCache(39.9, 116.4, ipLoc.cityName, ipLoc.provinceName);
-          }
-        } catch(e2) {
-          if (cached) {
-            coord = { lat: cached.lat, lon: cached.lon, cityName: cached.city||'当前位置', provinceName: cached.prov||'' };
-          } else {
-            coord = DEFAULT;
-          }
+          const pos = await Promise.race([
+            getGPSPosition(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('gps_slow')), 5000))
+          ]);
+          var cityInfo2 = reverseCityName(pos.lat, pos.lon);
+          coord = { lat: pos.lat, lon: pos.lon, cityName: cityInfo2.cityName, provinceName: cityInfo2.provinceName };
+          saveCache(pos.lat, pos.lon, cityInfo2.cityName, cityInfo2.provinceName);
+          located = true;
+        } catch(e) {}
+      }
+
+      // 3. Both failed, use cache or default
+      if (!located) {
+        if (cached) {
+          coord = { lat: cached.lat, lon: cached.lon, cityName: cached.city||'当前位置', provinceName: cached.prov||'' };
+        } else {
+          coord = DEFAULT;
         }
       }
     }
