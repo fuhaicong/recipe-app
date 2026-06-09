@@ -1231,8 +1231,8 @@ details[open] .details-summary::after {
 .day-content{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .btn-refresh-day{align-self:flex-end;display:inline-flex;align-items:center;gap:4px;padding:5px 14px;flex-shrink:0;background:var(--color-text);border:none;border-radius:var(--radius-full);cursor:pointer;color:var(--color-surface);font-family:inherit;font-size:12px;font-weight:var(--weight-semibold);transition:all var(--ease-out)}
 .btn-refresh-day:active{opacity:.8}
-#day-recipes-list{flex:1}
-.day-recipes{display:flex;flex-direction:column;gap:6px}
+#day-recipes-list{flex:1;text-align:right}
+.day-recipes{display:flex;flex-direction:column;gap:6px;text-align:left}
 .day-recipe{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:pointer;transition:all var(--ease-out)}
 .day-recipe:active{background:var(--color-primary-glow)}
 .day-recipe-emoji{width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--color-primary-glow);border-radius:var(--radius-sm);flex-shrink:0}
