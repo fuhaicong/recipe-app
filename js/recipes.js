@@ -6416,7 +6416,7 @@ const RecipeModule = (() => {
     if (recipe.tags.includes(context.mealTime)) score += 30;
     else {
       // Penalize recipes tagged for a different meal time
-      var mealTags = ['breakfast','lunch','dinner','late_night'];
+      var mealTags = ['breakfast','lunch','snack','dinner','late_night'];
       for (var mi=0;mi<mealTags.length;mi++) {
         if (mealTags[mi]!==context.mealTime && recipe.tags.includes(mealTags[mi])) score -= 20;
       }
@@ -6424,6 +6424,7 @@ const RecipeModule = (() => {
       if (context.mealTime==='dinner' && recipe.tags.includes('hearty')) score += 5;
       if (context.mealTime==='late_night' && recipe.tags.includes('comfort_food')) score += 5;
       if (context.mealTime==='breakfast' && recipe.tags.includes('quick_easy')) score += 5;
+      if (context.mealTime==='snack' && (recipe.tags.includes('snack')||recipe.tags.includes('dessert')||recipe.tags.includes('drink')||recipe.tags.includes('sweet'))) score += 15;
     }
 
     // Session-based variation: same session = same results, different session = different results

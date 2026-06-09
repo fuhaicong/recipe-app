@@ -1206,8 +1206,11 @@ details[open] .details-summary::after {
    ========================================================== */
 .day-panel{display:flex;gap:8px;min-height:200px}
 .day-tabs{display:flex;flex-direction:column;gap:4px;flex-shrink:0;width:72px}
-.day-tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:var(--radius-md);cursor:pointer;border:1px solid transparent;transition:all var(--ease-out);text-align:center}
-.day-tab:hover,.day-tab--active{background:var(--color-primary-glow);border-color:var(--color-primary-light)}
+.day-tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border-radius:var(--radius-md);cursor:pointer;border:1px solid var(--color-border);transition:all var(--ease-out);text-align:center;background:var(--color-surface)}
+.day-tab:hover{background:var(--color-primary-glow)}
+.day-tab--active{background:var(--color-primary);color:#fff;border-color:var(--color-primary)}
+.day-tab--active .day-tab-label{color:#fff}
+.day-tab--active .day-tab-count{color:rgba(255,255,255,.7)}
 .day-tab-emoji{font-size:20px}
 .day-tab-label{font-size:11px;font-weight:var(--weight-semibold);color:var(--color-text)}
 .day-tab-count{font-size:10px;color:var(--color-text-muted)}
