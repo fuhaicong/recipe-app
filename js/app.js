@@ -67,7 +67,7 @@ window.App = (() => {
     UIModule.renderWeatherBar(ctx);
     if (cached.currentRecs) UIModule.renderCurrentMeal(ctx.mealTime, cached.currentRecs);
     if (cached.currentRecs) { currentMealShown.clear(); cached.currentRecs.forEach(function(r){currentMealShown.add(r.recipe.id);}); }
-    if (cached.mealRecs) UIModule.renderTodayMeals(cached.mealRecs);
+    if (cached.dayRecs) UIModule.renderTodayMeals(cached.dayRecs);
     if (cached.takeoutPrimary) UIModule.renderTakeoutSection(cached.takeoutPrimary);
   }
 
@@ -80,11 +80,11 @@ window.App = (() => {
       var cityBtn = document.getElementById('city-name');
       if (cityBtn) cityBtn.innerHTML = '<svg width="14" height="14"><use href=\"#icon-pin\"/></svg> 北京';
       const cRecs = getCurrentMealTop3(fb, []);
-      const mealRecs = getMealRecommendations(fb, []);
-      const p = cRecs[0]?.recipe || mealRecs['lunch']?.recipe;
+      const dayRecs = getDayRecommendations(fb, []);
+      const p = cRecs[0]?.recipe;
       UIModule.renderWeatherBar(fb);
       UIModule.renderCurrentMeal(fb.mealTime, cRecs);
-      UIModule.renderTodayMeals(mealRecs);
+      UIModule.renderTodayMeals(dayRecs);
       if (p) UIModule.renderTakeoutSection(p);
     } catch(e) { UIModule.showError('加载失败，请刷新重试', true); }
   }
@@ -109,24 +109,18 @@ window.App = (() => {
     return results;
   }
 
-  function getMealRecommendations(context, recentIds) {
+  function getDayRecommendations(context, recentIds) {
     const allRecipes = getAllRecipes();
     const slots = ['breakfast','lunch','dinner','late_night'];
     const results = {};
-    const used = new Set();
-
     slots.forEach(slot => {
       const ctx = {...context, mealTime: slot};
-      // Score all recipes for this meal slot
       const scored = allRecipes
         .map(r => ({ recipe: r, score: RecipeModule.scoreRecipe(r, ctx, recentIds) }))
-        .filter(s => !used.has(s.recipe.id))
         .sort((a,b) => b.score - a.score);
-
-      if (scored.length > 0) {
-        results[slot] = scored[0];
-        used.add(scored[0].recipe.id);
-      }
+      const seen = new Set(), top3 = [];
+      for (const s of scored) { if (seen.has(s.recipe.id)) continue; top3.push(s); seen.add(s.recipe.id); if (top3.length >= 3) break; }
+      results[slot] = top3;
     });
     return results;
   }
@@ -163,7 +157,7 @@ window.App = (() => {
       if (promptText) promptText.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-1px;margin-right:4px"><use href="#icon-pin"/></svg> 当前城市：<strong>'+context.cityName+'</strong>';
 
       const recentIds = getRecentRecommendations();
-      const mealRecs = getMealRecommendations(context, recentIds);
+      const dayRecs = getDayRecommendations(context, recentIds);
 
       // Render
       currentContext = context;
@@ -174,21 +168,19 @@ window.App = (() => {
       const currentSlot = context.mealTime;
       const cRecs = getCurrentMealTop3(context, recentIds);
       UIModule.renderCurrentMeal(currentSlot, cRecs);
-      // Track shown recipes to avoid repeats on refresh-click
       currentMealShown.clear();
       cRecs.forEach(function(r){currentMealShown.add(r.recipe.id);});
 
-      UIModule.renderTodayMeals(mealRecs);
+      UIModule.renderTodayMeals(dayRecs);
 
-      // Pick current meal time's recipe as primary for takeout
-      const primary = mealRecs[currentSlot] ? mealRecs[currentSlot].recipe : mealRecs['lunch']?.recipe || mealRecs['dinner']?.recipe;
+      const primary = cRecs[0]?.recipe || dayRecs['lunch']?.[0]?.recipe;
       if (primary) {
         UIModule.renderTakeoutSection(primary);
         addToHistory(primary.id);
       }
 
       // Save cache
-      saveTodayCache({ context, currentRecs: cRecs, mealRecs, takeoutPrimary: primary });
+      saveTodayCache({ context, currentRecs: cRecs, dayRecs: dayRecs, takeoutPrimary: primary });
       UIModule.setOfflineBanner(false);
 
     } catch (e) {
@@ -551,6 +543,15 @@ window.App = (() => {
           openBrowse();
         }
       });
+    });
+
+    // Day tabs: toggle open/close
+    var dayTabs = document.getElementById('day-tabs');
+    if (dayTabs) dayTabs.addEventListener('click', function(e) {
+      var header = e.target.closest('.day-tab-header');
+      if (!header) return;
+      var tab = header.parentElement;
+      tab.classList.toggle('open');
     });
 
     // Tab bar: switch active recipe

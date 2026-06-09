@@ -209,28 +209,37 @@ const UIModule = (() => {
   }
 
   /* ==========================================================
-     Today's 3-Meal Grid
+     All-Day Tabs
      ========================================================== */
-  const MEAL_SLOTS = [
+  var DAY_SLOTS = [
     { key: 'breakfast', time: '早餐', emoji: '🌅' },
     { key: 'lunch', time: '午餐', emoji: '🌤️' },
     { key: 'dinner', time: '晚餐', emoji: '🌙' },
     { key: 'late_night', time: '夜宵', emoji: '🌃' },
   ];
 
-  function renderTodayMeals(mealRecs) {
+  function renderTodayMeals(dayData) {
     hide('loading-skeleton');
-    const grid = $('today-meals-grid');
-    if (!grid) return;
-    grid.innerHTML = MEAL_SLOTS.map(slot => {
-      const m = mealRecs[slot.key];
-      if (!m) return '';
-      return '<article class="meal-slot-card" data-meal="'+slot.key+'" data-recipe-id="'+m.recipe.id+'">' +
-        '<div class="meal-slot-time">'+slot.time+'</div>' +
-        '<span class="meal-slot-emoji">'+m.recipe.emoji+'</span>' +
-        '<div class="meal-slot-name">'+escapeHtml(m.recipe.name.replace(m.recipe.emoji+' ',''))+'</div>' +
-        '<span class="meal-slot-score">'+m.score+'%</span>' +
-        '</article>';
+    var container = $('day-tabs');
+    if (!container) return;
+    container.innerHTML = DAY_SLOTS.map(function(slot) {
+      var top3 = (dayData && dayData[slot.key]) ? dayData[slot.key] : [];
+      var recipesHtml = top3.map(function(r) {
+        return '<div class="day-tab-recipe" data-recipe-id="'+r.recipe.id+'">'+
+          '<span class="day-tab-recipe-emoji">'+r.recipe.emoji+'</span>'+
+          '<span class="day-tab-recipe-name">'+esc(r.recipe.name.replace(r.recipe.emoji+' ',''))+'</span>'+
+          '<span class="day-tab-recipe-meta">'+r.recipe.prepTimeMin+'min</span>'+
+          '<span class="day-tab-recipe-score">'+r.score+'%</span>'+
+        '</div>';
+      }).join('');
+      return '<div class="day-tab'+(slot.key==='lunch'?' open':'')+'">'+
+        '<div class="day-tab-header" data-meal="'+slot.key+'">'+
+          '<span class="day-tab-emoji">'+slot.emoji+'</span>'+
+          '<span class="day-tab-label">'+slot.time+' ('+top3.length+'道)</span>'+
+          '<span class="day-tab-arrow">▼</span>'+
+        '</div>'+
+        '<div class="day-tab-body"><div class="day-tab-recipes">'+recipesHtml+'</div></div>'+
+      '</div>';
     }).join('');
     show('today-meals');
   }
