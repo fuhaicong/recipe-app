@@ -111,7 +111,7 @@ window.App = (() => {
 
   function getDayRecommendations(context, recentIds) {
     const allRecipes = getAllRecipes();
-    const slots = ['breakfast','lunch','dinner','late_night'];
+    const slots = ['breakfast','lunch','snack','dinner','late_night'];
     const results = {};
     slots.forEach(slot => {
       const ctx = {...context, mealTime: slot};

@@ -214,6 +214,7 @@ const UIModule = (() => {
   var DAY_SLOTS = [
     { key: 'breakfast', time: '早餐', emoji: '🌅' },
     { key: 'lunch', time: '午餐', emoji: '🌤️' },
+    { key: 'snack', time: '下午茶', emoji: '🍵' },
     { key: 'dinner', time: '晚餐', emoji: '🌙' },
     { key: 'late_night', time: '夜宵', emoji: '🌃' },
   ];
