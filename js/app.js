@@ -613,8 +613,9 @@ window.App = (() => {
     if(!navigator.onLine) UIModule.setOfflineBanner(true);
 
     // Render IMMEDIATELY — zero async, zero API
-    const cached = getCachedToday();
-    if (cached && isCacheFresh(cached)) {
+    var cached = getCachedToday();
+    var hasCache = cached && isCacheFresh(cached);
+    if (hasCache) {
       renderFromCache(cached);
     } else {
       renderFallback();
@@ -622,7 +623,10 @@ window.App = (() => {
 
     setupEventListeners();
 
-    // Permission check in background only
+    // Background: try GPS + weather to update location & recipes
+    if (!hasCache) {
+      setTimeout(() => { refreshRecommendations({silent:true}).catch(()=>{}); }, 500);
+    }
     setTimeout(() => { checkPermissionInBackground(); }, 2000);
   }
 
