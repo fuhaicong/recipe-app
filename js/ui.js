@@ -242,9 +242,8 @@ const UIModule = (() => {
 
   function renderDayContent(dayData, mealKey) {
     var contentEl = $('day-content');
-    if (!contentEl) { console.log('[DayTab] day-content element not found'); return; }
+    if (!contentEl) return;
     var top3 = (dayData && dayData[mealKey]) ? dayData[mealKey] : [];
-    console.log('[DayTab] mealKey:', mealKey, 'top3 count:', top3.length, 'dayData keys:', dayData ? Object.keys(dayData) : 'null');
     contentEl.innerHTML = '<div class="day-recipes">'+top3.map(function(r) {
       return '<div class="day-recipe">'+
         '<span class="day-recipe-emoji">'+r.recipe.emoji+'</span>'+
@@ -259,7 +258,6 @@ const UIModule = (() => {
   }
 
   function switchDayTab(mealKey, dayData) {
-    console.log('[DayTab] switchDayTab called, mealKey:', mealKey);
     var tabs = document.querySelectorAll('.day-tab');
     tabs.forEach(function(t) { t.classList.remove('day-tab--active'); });
     var active = document.querySelector('.day-tab[data-meal="'+mealKey+'"]');
