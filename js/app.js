@@ -551,7 +551,9 @@ window.App = (() => {
       var tab = e.target.closest('.day-tab');
       if (!tab) return;
       var mealKey = tab.dataset.meal;
+      console.log('[DayTab] clicked:', mealKey);
       var cached = getCachedToday();
+      console.log('[DayTab] cached:', cached ? 'yes' : 'no', 'dayRecs:', cached&&cached.dayRecs ? Object.keys(cached.dayRecs) : 'none');
       var dayData = cached && cached.dayRecs ? cached.dayRecs : {};
       UIModule.switchDayTab(mealKey, dayData);
     });
